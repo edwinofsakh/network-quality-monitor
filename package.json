@@ -1,8 +1,8 @@
 {
   "name": "ping-logger",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Simple ping logger to check ping over the time.",
-  "main": "ping.js",
+  "main": "cli.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -21,8 +21,9 @@
   },
   "homepage": "https://github.com/edwinofsakh/ping-logger#readme",
   "dependencies": {
-    "clear": "^0.1.0",
     "csv-write-stream": "^2.0.0",
+    "log-update": "^4.0.0",
+    "meow": "^8.1.0",
     "net-ping": "^1.2.3"
   }
 }
