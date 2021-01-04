@@ -1,6 +1,7 @@
 const chart = require('asciichart');
 
-const DEFAULT_VALUES_SIZE = 70;
+const DEFAULT_VALUES_SIZE = 100;
+const DEFAULT_N_CHANNELS = 10;
 
 class Statistic {
     constructor(min, max) {
@@ -8,7 +9,24 @@ class Statistic {
         this._mean = 0;
         this._min = max;
         this._max = min;
+
         this._values = [];
+
+        const n = DEFAULT_N_CHANNELS;
+        const step = Math.floor((max - min) / n);
+        const bins = [];
+        for (let i = 0; i < n; i++) {
+            bins.push(min + (i + 1) * step);
+        }
+
+        this._dist = {
+            n: n,
+            step: step,
+            min: min,
+            max: min + step * n,
+            channels: Array(DEFAULT_N_CHANNELS).fill(0),
+            bins: bins
+        }
     }
 
     update(newValue) {
@@ -23,6 +41,11 @@ class Statistic {
 
         this._min = Math.min(newValue, this._min);
         this._max = Math.max(newValue, this._max);
+
+        const i = Math.floor((newValue - this._dist.min) / this._dist.step);
+        if (i < 0) i = 0;
+        if (i >= this._dist.n) i = this._dist.n;
+        this._dist.channels[i]++;
     }
 
     get count() {
@@ -48,6 +71,12 @@ class Statistic {
         return this._values;
     }
 
+    get dist() {
+        this.validate('Dist');
+        return this._dist.channels.map(i => (i / this._count * 100).toFixed(1).padStart(6, ' ') + '%').join('') + '\n'
+            + this._dist.bins.map(i => (i.toFixed(0).padStart(7, ' '))).join('') + '\n';
+    }
+
     validate(name) {
         if (this._count == 0) {
             throw new Error(name + ' is undefined')
@@ -57,20 +86,20 @@ class Statistic {
 
 class DelayStatistic extends Statistic {
     constructor(max) {
-      super(0, max);
+        super(0, max);
     }
-  
+
     get text() {
-      return `min ${this.min.toFixed(0).padStart(4, ' ')}ms, avg ${this.mean.toFixed(0).padStart(4, ' ')}ms, max ${this.max.toFixed(0).padStart(4, ' ')}ms`;
+        return `min ${this.min.toFixed(0).padStart(4, ' ')}ms, avg ${this.mean.toFixed(0).padStart(4, ' ')}ms, max ${this.max.toFixed(0).padStart(4, ' ')}ms`;
     }
-  
+
     get chart() {
-      const n = this.values.length;
-      if (n) {
-        return chart.plot([this.values, Array(n).fill(this.mean)], this._getChartOptions());
-      } else {
-        return '---';
-      }
+        const n = this.values.length;
+        if (n) {
+            return chart.plot([this.values, Array(n).fill(this.mean)], this._getChartOptions());
+        } else {
+            return '---';
+        }
     }
 
     _getChartOptions() {
@@ -85,9 +114,9 @@ class DelayStatistic extends Statistic {
     }
 
     _getChartHeight() {
-        return Math.min(40, process.stdout.rows - 8);
+        return Math.min(24, process.stdout.rows - 9);
     }
-  }
-  
+}
+
 module.exports.Statistic = Statistic;
 module.exports.DelayStatistic = DelayStatistic;

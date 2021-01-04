@@ -1,9 +1,10 @@
 {
   "name": "ping-logger",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Simple ping logger to check ping over the time.",
-  "main": "cli.js",
+  "main": "ping-logger-cli.js",
   "scripts": {
+    "start": "node ping-logger-cli.js 1.1.1.1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
