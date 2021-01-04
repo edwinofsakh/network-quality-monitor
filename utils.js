@@ -42,7 +42,7 @@ class Statistic {
         this._min = Math.min(newValue, this._min);
         this._max = Math.max(newValue, this._max);
 
-        const i = Math.floor((newValue - this._dist.min) / this._dist.step);
+        let i = Math.floor((newValue - this._dist.min) / this._dist.step);
         if (i < 0) i = 0;
         if (i >= this._dist.n) i = this._dist.n;
         this._dist.channels[i]++;
