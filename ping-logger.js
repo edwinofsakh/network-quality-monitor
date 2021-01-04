@@ -116,7 +116,7 @@ class PingLogger {
     }
 
     _printStatus() {
-        logUpdate(`\nMonitoring ${FRAMES[this.frame]}\nLast Response: ${this.last}\n${this.stats.print()}`);
+        logUpdate(`\n${FRAMES[this.frame]} Monitoring\nLast Response: ${this.last}\n${this.stats.print()}`);
     }
 }
 

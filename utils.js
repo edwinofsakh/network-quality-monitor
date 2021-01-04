@@ -74,7 +74,7 @@ class Statistic {
     get dist() {
         this.validate('Dist');
         return this._dist.channels.map(i => (i / this._count * 100).toFixed(1).padStart(6, ' ') + '%').join('') + '\n'
-            + this._dist.bins.map(i => (i.toFixed(0).padStart(7, ' '))).join('') + '\n';
+            + this._dist.bins.map(i => (i.toFixed(0).padStart(7, ' '))).join('');
     }
 
     validate(name) {
@@ -94,9 +94,10 @@ class DelayStatistic extends Statistic {
     }
 
     get chart() {
-        const n = this.values.length;
-        if (n) {
-            return chart.plot([this.values, Array(n).fill(this.mean)], this._getChartOptions());
+        const n = Math.min(this.values.length, process.stdout.columns - 7);
+        const options = this._getChartOptions();
+        if (this._count && options.height > 1) {
+            return chart.plot([this.values.slice(-n), Array(n).fill(this.mean)], options);
         } else {
             return '---';
         }
@@ -114,7 +115,7 @@ class DelayStatistic extends Statistic {
     }
 
     _getChartHeight() {
-        return Math.min(24, process.stdout.rows - 9);
+        return Math.min(24, process.stdout.rows - 8 - 2);
     }
 }
 

@@ -78,11 +78,13 @@ class HttpMonitor {
             res.on('end', () => {
                 const finished = Date.now();
                 this._finishTime.update(finished - sent);
-                this._text = `Data received: ${rawData.length}\n`;
+                this._text = `${SPINNER[this._frame]} [${process.stdout.columns}x${process.stdout.rows}] HTTP Monitor for ${this._target}`;
+                this._text += `Data received: ${rawData.length}\n`;
                 this._text += `Sent: ${this._sent}, Received: ${this._received}, Failed: ${this._failed}\n`
                 this._text += `Total time   : ${this._finishTime.text}\n`;
                 this._text += `Receive time : ${this._receiveTime.text}\n`;
                 this._text += `Distribution\n${this._finishTime.dist}\n`;
+                this._text += `Chart\n`;
 
                 this._renderFrame();
             });
@@ -93,8 +95,15 @@ class HttpMonitor {
         });
     }
 
+    _trimLine(line) {
+        const n = process.stdout.columns;
+        return line.length >= n ? (line.substring(0, n - 3) + "...") : line;
+    }
+
     _prepareOutput() {
-        let output = `${SPINNER[this._frame]} HTTP Monitor for ${this._target}\n${this._finishTime.chart}\n${this._text}`;
+        const lines = this._text.split(/\r\n|\r|\n/);
+        let output = lines.map(line => this._trimLine(line)).join('\n') + this._finishTime.chart;
+
         const n = process.stdout.rows - output.split(/\r\n|\r|\n/).length - 1;
         for (let i = 0; i < n; i++) {
             output += '\n';
