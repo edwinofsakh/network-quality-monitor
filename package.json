@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/edwinofsakh/ping-logger#readme",
   "dependencies": {
+    "asciichart": "^1.5.25",
     "csv-write-stream": "^2.0.0",
     "log-update": "^4.0.0",
     "meow": "^8.1.0",
