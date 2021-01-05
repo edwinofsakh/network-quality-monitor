@@ -19,14 +19,15 @@ class HttpMonitor {
         this._receiveTime = new DelayStatistic(MAX_DELAY);
         this._finishTime = new DelayStatistic(MAX_DELAY);
 
-        this._text = 'Loading...';
+        this._text = 'Loading...\n';
         
         this._sent = 0;
         this._received = 0;
         this._failed = 0;
 
         this._frame = 0;
-        this._spf = 200;
+        this._spf = 250;
+        this._render = '[...ms]';
     }
 
     start() {
@@ -66,7 +67,7 @@ class HttpMonitor {
             if (error) {
                 this._failed++;
                 logUpdate.clear();
-                console.error(error.message);
+                console.log(`${(new Date()).toISOString()}: (Error) ${error.message}`);
                 // Consume response data to free up memory
                 res.resume();
                 return;
@@ -78,7 +79,7 @@ class HttpMonitor {
             res.on('end', () => {
                 const finished = Date.now();
                 this._finishTime.update(finished - sent);
-                this._text = `${SPINNER[this._frame]} [${process.stdout.columns}x${process.stdout.rows}] HTTP Monitor for ${this._target}`;
+                this._text = `HTTP Monitor for ${this._target}\n`;
                 this._text += `Data received: ${rawData.length}\n`;
                 this._text += `Sent: ${this._sent}, Received: ${this._received}, Failed: ${this._failed}\n`
                 this._text += `Total time   : ${this._finishTime.text}\n`;
@@ -86,12 +87,12 @@ class HttpMonitor {
                 this._text += `Distribution\n${this._finishTime.dist}\n`;
                 this._text += `Chart\n`;
 
-                this._renderFrame();
+                // this._renderFrame();
             });
-        }).on('error', (e) => {
+        }).on('error', (error) => {
             this._failed++;
             logUpdate.clear();
-            console.error(`Got error: ${e.message}`);
+            console.log(`${(new Date()).toISOString()}: (Error) ${error.message}`);
         });
     }
 
@@ -100,15 +101,18 @@ class HttpMonitor {
         return line.length >= n ? (line.substring(0, n - 3) + "...") : line;
     }
 
+    _getRule() {
+        return '='.repeat(process.stdout.columns);
+    }
+
     _prepareOutput() {
-        const lines = this._text.split(/\r\n|\r|\n/);
-        let output = lines.map(line => this._trimLine(line)).join('\n') + this._finishTime.chart;
+        const lines = (`${SPINNER[this._frame]} ${this._render} [${process.stdout.columns}x${process.stdout.rows}] ${this._text}`).split(/\r\n|\r|\n/);
+        let output = `${this._getRule()}\n` + lines.map(line => this._trimLine(line)).join('\n') + this._finishTime.chart +`\n${this._getRule()}`;
 
         const n = process.stdout.rows - output.split(/\r\n|\r|\n/).length - 1;
         for (let i = 0; i < n; i++) {
             output += '\n';
         }
-
         return output;
     }
 
@@ -117,7 +121,10 @@ class HttpMonitor {
     }
 
     _renderFrame() {
+        const start = Date.now();
         logUpdate(this._prepareOutput());
+        const end = Date.now();
+        this._render = `[${(end - start).toFixed(0).padStart(3, ' ')}ms]`;
     }
 }
 

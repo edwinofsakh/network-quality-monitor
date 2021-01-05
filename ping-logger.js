@@ -1,5 +1,6 @@
-const ping = require('net-ping');
 const fs = require('fs');
+const path = require('path');
+const ping = require('net-ping');
 const csvWriter = require('csv-write-stream');
 const logUpdate = require('log-update');
 
@@ -24,31 +25,55 @@ class PingLogger {
         this.last = 'NA';
         this.stats = new PingStatistics();
 
+        this.filename = '';
+        this.writer = null;
+        this.stream = null;
+
         if (this.options.save) {
-            this.filename = 'ping-log-' + this.target + '-' + Date.now() + '.csv';
-            this.writer = csvWriter({ headers: ["Sent", "Received", "Ping", "Status", "Message"] });
-            this.stream = fs.createWriteStream(this.filename);
-            this.writer.pipe(this.stream);
-            this.writer.on('finish', () => {
-                console.log('All writes are now complete.');
-            });    
-        } else {
-            this.filename = '';
-            this.writer = null;
-            this.stream = null;
+            this.filename = path.join('.', 'results', `ping-log-${this.target}-${Date.now()}.csv`);
         }
+
+        this._spf = 250;
+        this._render = '[...ms]';
     }
 
     start() {
         this._printSettings();
+        this._openLogFile();
         this._initialize();
         this._pingHost();
 
         setInterval(() => this._pingHost(), this.options.interval);
         setInterval(() => {
             this.frame = ++this.frame % FRAMES.length;
-            this._printStatus()
-        }, 100);
+            this._printStatus();
+        }, this._spf);
+    }
+
+    _openLogFile() {
+        if (!this.options.save) return;
+
+        const dir = path.join('.', 'results');
+
+        try {
+            fs.accessSync(dir, fs.constants.R_OK | fs.constants.W_OK);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                fs.mkdirSync(dir);
+            } else {
+                console.log('Can not save results due to error: ' + err.message)
+                this.options.save = false;
+            }
+        }
+
+        if (!this.options.save) return;
+
+        this.writer = csvWriter({ headers: ["Sent", "Received", "Ping", "Status", "Message"] });
+        this.stream = fs.createWriteStream(this.filename);
+        this.writer.pipe(this.stream);
+        this.writer.on('finish', () => {
+            console.log('All writes are now complete.');
+        });
     }
 
     _isValidTarget(target) {
@@ -67,23 +92,23 @@ class PingLogger {
     _initialize() {
         this.session = ping.createSession(this._getSessionOptions());
         logUpdate.clear();
-        console.log(`${(new Date()).toISOString()}: New session (${this.session.sessionId}) was created`);
+        console.log(`${(new Date()).toISOString()}: New session was created`);
 
         this.session.on('error', (error) => {
             logUpdate.clear();
-            
+
             if (error) {
-                console.log(`${(new Date()).toISOString()}: ${error.message}`);
+                console.log(`${(new Date()).toISOString()}: (Error) ${error.message}`);
             } else {
-                console.log(`${(new Date()).toISOString()}: Unknown socket error`);
+                console.log(`${(new Date()).toISOString()}: (Error) Unknown socket error`);
             }
-            
+
             this.session.close();
         });
 
         this.session.on('close', () => {
             logUpdate.clear();
-            console.log(`${(new Date()).toISOString()}: Session (${this.session.sessionId}) was closed`);
+            console.log(`${(new Date()).toISOString()}: Session was closed`);
         });
     }
 
@@ -94,7 +119,6 @@ class PingLogger {
             const message = error ? error.message.trim() : 'Done';
             this.last = `${status} - ${message} - ${ping}ms`;
             this.stats.update(status, ping);
-            this._printStatus();
 
             if (this.options.save) {
                 this.writer.write([sent.toISOString(), received.toISOString(), ping + 'ms', status, message]);
@@ -104,19 +128,24 @@ class PingLogger {
 
     _printSettings() {
         console.log('');
-        
-        console.log(`Monitor ping to ${this.target}.`);
-        console.log(`Options: ${JSON.stringify(this.options)}`);
-        
-        if (this.options.save) {
-            console.log(`Results will be saved to "${this.filename}" file.`);
+
+        if (this.options.verbose) {
+            console.log(`Options: ${JSON.stringify(this.options)}`);
         }
-        
+
+        if (this.options.save) {
+            console.log(`Results will be saved to "${this.filename}".`);
+        }
+
         console.log('');
+        console.log('Session Log:');
     }
 
     _printStatus() {
-        logUpdate(`\n${FRAMES[this.frame]} Monitoring\nLast Response: ${this.last}\n${this.stats.print()}`);
+        const start = Date.now();
+        logUpdate(`\n${FRAMES[this.frame]} ${this._render} Ping Monitor for ${this.target}\nLast Response: ${this.last}\n${this.stats.print()}`);
+        const end = Date.now();
+        this._render = `[${(end - start).toFixed(0).padStart(3, ' ')}ms]`;
     }
 }
 
@@ -153,13 +182,13 @@ class PingStatistics {
             if (!this.status[status]) {
                 this.status[status] = 0;
             }
-            
+
             this.status[status]++;
-        }      
+        }
     }
 
     print() {
-        const ping = `Ping: min ${this.min}ms, avg ${this.avg.count ? Math.round(this.avg.mean): 'NA'}ms, max ${this.max}ms`;
+        const ping = `Ping: min ${this.min}ms, avg ${this.avg.count ? Math.round(this.avg.mean) : 'NA'}ms, max ${this.max}ms`;
         const sent = `Number of requests: ${this.sent}`
         const n = this.sent.toFixed(0).length;
         const responses = `Responses:\n` + Object.keys(this.status).map((key) => this._formatStatus(key, n)).join('');
@@ -167,8 +196,8 @@ class PingStatistics {
     }
 
     _formatStatus(key, n) {
-        const percent = (this.status[key]/this.sent*100).toFixed(0);
-        return ` - ${key.padEnd(28, ' ')}: ${(this.status[key]).toString().padStart(n, ' ')} (${(percent).toString().padStart(3, ' ')}%)\n`
+        const percent = (this.status[key] / this.sent * 100).toFixed(1);
+        return ` - ${key.padEnd(28, ' ')}: ${(this.status[key]).toString().padStart(n, ' ')} (${(percent).toString().padStart(5, ' ')}%)\n`
     }
 }
 

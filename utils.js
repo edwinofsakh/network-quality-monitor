@@ -96,11 +96,14 @@ class DelayStatistic extends Statistic {
     get chart() {
         const n = Math.min(this.values.length, process.stdout.columns - 7);
         const options = this._getChartOptions();
-        if (this._count && options.height > 1) {
-            return chart.plot([this.values.slice(-n), Array(n).fill(this.mean)], options);
-        } else {
-            return '---';
+        if (options.height < 3) {
+            return ' Not enough space for chart!';
         }
+        if (this._count < 2) {
+            return ' Waiting for data...';
+        }
+
+        return chart.plot([this.values.slice(-n), Array(n).fill(this.mean)], options);
     }
 
     _getChartOptions() {
@@ -110,12 +113,12 @@ class DelayStatistic extends Statistic {
             padding: padding,
             height: this._getChartHeight(),
             format: (x, _i) => (padding + x.toFixed(0)).slice(-padding.length),
-            colors: [chart.green, chart.default]
+            // colors: [chart.green, chart.default]
         };
     }
 
     _getChartHeight() {
-        return Math.min(24, process.stdout.rows - 8 - 2);
+        return Math.min(24, process.stdout.rows - 8 - 5);
     }
 }
 
