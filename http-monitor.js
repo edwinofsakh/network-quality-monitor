@@ -1,24 +1,16 @@
 const http = require('http');
 const https = require('https');
-const logUpdate = require('log-update');
-const { DelayStatistic } = require('./utils/statistic');
-const chart = require('./utils/chart');
 
-const SPINNER = ['-', '\\', '|', '/'];
+const chart = require('./utils/chart');
+const { DelayStatistic } = require('./utils/statistic');
+const { ConsoleApplication } = require('./utils/console');
+
 const LABELS = ['(-∞, 0.0)', '[0.0,0.2)', '[0.2,0.4)', '[0.4,0.6)', '[0.6,0.8)', '[0.8,1.0)', '[1.0,1.2)', '[1.2,1.4)', '[1.4,1.6)', '[1.6,1.8)', '[2.0, +∞)'];
 
-/**
- * Trims line to console width.
- * @param {string} line - original line
- * @return {string} - trimmed line
- */
-function trimLine(line) {
-    const n = process.stdout.columns;
-    return line.length >= n ? (line.substring(0, n - 1) + "░") : line;
-}
-
-class HttpMonitor {
+class HttpMonitor extends ConsoleApplication {
     constructor(target, options) {
+        super();
+
         // Target url
         this._target = target || 'https://network-tools.herokuapp.com/';
 
@@ -42,37 +34,22 @@ class HttpMonitor {
 
         // Number of failed requests
         this._failed = 0;
-
-        // Current spinner frame
-        this._frame = 0;
-        
-        // Seconds per frame
-        this._spf = 250;
-
-        // Rendering time as a text
-        this._rending = '[...ms]';
     }
 
     /**
      * Starts http monitor.
      */
     start() {
-        // Start target loading cycle.
+        // Starts target loading cycle.
         this._loadTarget();
+        setInterval(() => this._loadTarget(), this._options.interval);
 
-        setInterval(() => {
-            this._loadTarget();
-        }, this._options.interval);
-
-        // Start output update cycle.
-        setInterval(() => {
-            this._nextFrame();
-            this._renderFrame();
-        }, this._spf);
+        // Starts rendering cycle.
+        setInterval(() => this._render(), this._spf);
     }
 
     /**
-     * Load target url and update statistics.
+     * Loads target url and update statistics.
      */
     _loadTarget() {
         const sent = Date.now();
@@ -95,8 +72,8 @@ class HttpMonitor {
 
             if (error) {
                 this._failed++;
-                logUpdate.clear();
-                console.log(`${(new Date()).toISOString()}: (Error) ${error.message}`);
+                this._clear();
+                this._log(`(Error) ${error.message}`);
                 // Consume response data to free up memory
                 res.resume();
                 return;
@@ -118,34 +95,27 @@ class HttpMonitor {
             });
         }).on('error', (error) => {
             this._failed++;
-            logUpdate.clear();
-            console.log(`${(new Date()).toISOString()}: (Error) ${error.message}`);
+            this._clear();
+            this._log(`(Error) ${error.message}`);
         });
     }
 
     /**
-     * Returns console width double line.
-     * @returns {string} - line
-     */
-    _getRule() {
-        return '═'.repeat(process.stdout.columns);
-    }
-
-    /**
-     * Prepare console output.
+     * Prepares console output.
      * @returns {string} - console output
      */
     _prepareOutput() {
-        let prefix = SPINNER[this._frame];
+        let prefix = this._printSpinner();
 
         if (this._options.verbose) {
-            prefix += ` ${this._rending} [${process.stdout.columns}x${process.stdout.rows}]`;
+            prefix += ` ${this._printDebugInfo()}`;
         }
 
         const lines = (`${prefix} ${this._text}`).split(/\r\n|\r|\n/);
 
         if (this._options.chart) {
-            let output = `${this._getRule()}\n${lines.map(trimLine).join('\n')}Chart\n${chart.prepare(this._delay)}\n${this._getRule()}`;
+            const hr = this._printHorizontalRule();
+            let output = `${hr}\n${lines.map(i => this._trimLine(i)).join('\n')}Chart\n${chart.prepare(this._delay)}\n${hr}`;
     
             if (this._options.fullscreen) {
                 const n = process.stdout.rows - output.split(/\r\n|\r|\n/).length - 1;
@@ -156,25 +126,8 @@ class HttpMonitor {
 
             return output;
         } else {
-            return lines.map(trimLine).join('\n');
+            return lines.map(i => this._trimLine(i)).join('\n');
         }
-    }
-
-    /**
-     * Updates spinner frame.
-     */
-    _nextFrame() {
-        this._frame = ++this._frame % SPINNER.length;
-    }
-
-    /**
-     * Update console output.
-     */
-    _renderFrame() {
-        const start = Date.now();
-        logUpdate(this._prepareOutput());
-        const end = Date.now();
-        this._rending = `[${(end - start).toFixed(0).padStart(3, ' ')}ms]`;
     }
 }
 

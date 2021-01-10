@@ -2,33 +2,24 @@ const fs = require('fs');
 const path = require('path');
 const ping = require('net-ping');
 const csvWriter = require('csv-write-stream');
-const logUpdate = require('log-update');
 const { DelayStatistic } = require('./utils/statistic');
+const { ConsoleApplication } = require('./utils/console');
 
 const SUCCESS = 'Success';
-const FRAMES = ['-', '\\', '|', '/'];
 
-class PingMonitor {
+class PingMonitor extends ConsoleApplication {
     constructor(target, options) {
+        super();
         this._target = target || '1.1.1.1';
         this._options = options;
 
-        this._last = 'NA';
+        this._lastResponse = 'NA';
 
         this._sent = 0;
         this._delay = new DelayStatistic(200, 8);
 
-        this._statuses = {
-            'Success': 0,
-            'RequestTimedOutError': 0,
-            'DestinationUnreachableError': 0,
-            'PacketTooBigError': 0,
-            'ParameterProblemError': 0,
-            'RedirectReceivedError': 0,
-            'SourceQuenchError': 0,
-            'TimeExceededError': 0,
-        }
-        
+        this._statuses = {};
+
         this._filename = '';
         this._writer = null;
         this._stream = null;
@@ -36,26 +27,46 @@ class PingMonitor {
         if (this._options.save) {
             this._filename = path.join('.', 'results', `ping-monitor-${this._target}-${Date.now()}.csv`);
         }
-
-        this._frame = 0;
-        this._spf = 250;
-        this._rendering = '[...ms]';
     }
 
+    /**
+     * Starts ping monitor.
+     */
     start() {
         this._printSettings();
-        this._openLogFile();
-        this._initialize();
-        this._pingHost();
+        this._initWriter();
+        this._initSession();
+        
+        // Starts ping cycle.
+        this._pingTarget();
+        setInterval(() => this._pingTarget(), this._options.interval);
 
-        setInterval(() => this._pingHost(), this._options.interval);
-        setInterval(() => {
-            this._frame = ++this._frame % FRAMES.length;
-            this._printStatus();
-        }, this._spf);
+        // Starts rendering cycle.
+        setInterval(() => this._render(), this._spf);
     }
 
-    _openLogFile() {
+    /**
+     * Prints settings.
+     */
+    _printSettings() {
+        this._print('');
+
+        if (this._options.verbose) {
+            this._print(`Options: ${JSON.stringify(this._options)}`);
+        }
+
+        if (this._options.save) {
+            this._print(`Results will be saved to "${this._filename}".`);
+        }
+
+        this._print('');
+        this._print('Session Log:');
+    }
+
+    /**
+     * Initializes CSV writer.
+     */
+    _initWriter() {
         if (!this._options.save) return;
 
         const dir = path.join('.', 'results');
@@ -66,7 +77,7 @@ class PingMonitor {
             if (err.code === 'ENOENT') {
                 fs.mkdirSync(dir);
             } else {
-                console.log('Can not save results due to error: ' + err.message)
+                this._print('Can not save results due to error: ' + err.message)
                 this._options.save = false;
             }
         }
@@ -77,49 +88,46 @@ class PingMonitor {
         this._stream = fs.createWriteStream(this._filename);
         this._writer.pipe(this._stream);
         this._writer.on('finish', () => {
-            console.log('All writes are now complete.');
+            this._print('All writes are now complete.');
         });
     }
 
-    _getSessionOptions() {
-        let options = {
-            timeout: this._options.timeout,
-            retries: 0,
-        };
-
-        return options;
-    }
-
-    _initialize() {
-        this.session = ping.createSession(this._getSessionOptions());
-        logUpdate.clear();
-        console.log(`${(new Date()).toISOString()}: New session was created`);
+    /**
+     * Initializes ping session.
+     */
+    _initSession() {
+        this.session = ping.createSession({ timeout: this._options.timeout, retries: 0 });
+        this._clear();
+        this._log('New session was created');
 
         this.session.on('error', (error) => {
-            logUpdate.clear();
+            this._clear();
 
             if (error) {
-                console.log(`${(new Date()).toISOString()}: (Error) ${error.message}`);
+                this._log(`(Error) ${error.message}`);
             } else {
-                console.log(`${(new Date()).toISOString()}: (Error) Unknown socket error`);
+                this._log('(Error) Unknown socket error');
             }
 
             this.session.close();
         });
 
         this.session.on('close', () => {
-            logUpdate.clear();
-            console.log(`${(new Date()).toISOString()}: Session was closed`);
+            this._clear();
+            this._log('Session was closed');
         });
     }
 
-    _pingHost() {
+    /**
+     * Pings target ip.
+     */
+    _pingTarget() {
         this.session.pingHost(this._target, (error, _target, sent, received) => {
             const ping = received - sent;
             const status = error ? error.constructor.name : 'Success';
             const message = error ? error.message.trim() : 'Done';
-            this._last = `${status} - ${message} - ${ping}ms`;
-            this._update(status, ping);
+            this._lastResponse = `${status} - ${message} - ${ping}ms`;
+            this._updateStatistics(status, ping);
 
             if (this._options.save) {
                 this._writer.write([sent.toISOString(), received.toISOString(), ping + 'ms', status, message]);
@@ -127,53 +135,44 @@ class PingMonitor {
         });
     }
 
-    _printSettings() {
-        console.log('');
+    /**
+     * Prepares console output.
+     * @returns {string} - console output
+     */
+    _prepareOutput() {
+        let prefix = this._printSpinner();
 
         if (this._options.verbose) {
-            console.log(`Options: ${JSON.stringify(this._options)}`);
+            prefix += ` ${this._printDebugInfo()}`;
         }
 
-        if (this._options.save) {
-            console.log(`Results will be saved to "${this._filename}".`);
-        }
-
-        console.log('');
-        console.log('Session Log:');
+        return `\n${prefix} Ping Monitor for ${this._target}\nLast Response: ${this._lastResponse}\n${this._printStatistics()}`;
     }
 
-    _printStatus() {
-        const start = Date.now();
-        let prefix = FRAMES[this._frame];
-
-        if (this._options.verbose) {
-            prefix += ` ${this._rendering}`;
-        }
-
-        logUpdate(`\n${prefix} Ping Monitor for ${this._target}\nLast Response: ${this._last}\n${this._print()}`);
-        const end = Date.now();
-        this._rendering = `[${(end - start).toFixed(0).padStart(3, ' ')}ms]`;
-    }
-
-    _update(status, ping) {
+    /**
+     * Updates ping statistics.
+     * @param {string} status - status text
+     * @param {number} ping - ping in milliseconds
+     */
+    _updateStatistics(status, ping) {
         this._sent++;
+        
+        this._statuses[status] = (this._statuses[status] || 0) + 1;
 
         if (status === SUCCESS) {
-            this._statuses[status]++;
             this._delay.update(ping);
-        } else {
-            if (!this._statuses[status]) {
-                this._statuses[status] = 0;
-            }
-            this._statuses[status]++;
         }
     }
 
-    _print() {
+    /**
+     * Prints ping statistics.
+     * @returns {string} - statistics text
+     */
+    _printStatistics() {
         const ping = `Ping: ${this._delay.text}`;
         const sent = `Number of requests: ${this._sent}`;
         const n = this._sent.toFixed(0).length;
-        const responses = `Responses:\n` + Object.keys(this._statuses).map((key) => this._formatStatus(key, n)).join('');
+        const responses = `Responses:\n` + Object.keys(this._statuses).map(key => this._printStatus(key, n)).join('');
 
         if (this._options.histogram) {
             const hist = `${this._delay.histogram.print()}`;
@@ -183,7 +182,13 @@ class PingMonitor {
         }
     }
 
-    _formatStatus(key, n) {
+    /**
+     * Prints status.
+     * @param {string} key - status key
+     * @param {number} n - padding
+     * @returns {string} - status text
+     */
+    _printStatus(key, n) {
         const percent = (this._statuses[key] / this._sent * 100).toFixed(1);
         return ` - ${key.padEnd(28, ' ')}: ${(this._statuses[key]).toString().padStart(n, ' ')} (${(percent).toString().padStart(5, ' ')}%)\n`
     }

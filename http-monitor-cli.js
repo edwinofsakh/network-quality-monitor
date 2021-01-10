@@ -3,7 +3,7 @@ const HttpMonitor = require('./http-monitor');
 
 const cli = meow(`
 	Usage
-	  $ node http-monitor-cli.js <target>
+	  $ node http-monitor-cli.js <target url>
 	Options
 	  --interval -i    Time in milliseconds between requests
 	  --verbose -v     Output more detailed information

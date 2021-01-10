@@ -3,7 +3,7 @@ const PingMonitor = require('./ping-monitor');
 
 const cli = meow(`
 	Usage
-	  $ node ping-monitor-cli.js <target>
+	  $ node ping-monitor-cli.js <target ip>
 	Options
 	  --timeout -t     Ping request timeout in milliseconds
 	  --interval -i    Time in milliseconds between requests
