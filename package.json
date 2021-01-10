@@ -18,7 +18,7 @@
     "logger"
   ],
   "author": "Sergey Panpurin",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/edwinofsakh/ping-logger/issues"
   },
