@@ -1,11 +1,11 @@
 {
   "name": "ping-logger",
-  "version": "0.0.3",
-  "description": "Simple ping logger to check ping over the time.",
-  "main": "ping-logger-cli.js",
+  "version": "0.1.0",
+  "description": "Simple ping monitor to check ping over the time.",
+  "main": "ping-monitor-cli.js",
   "scripts": {
-    "start": "node ping-logger-cli.js 1.1.1.1",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ping-monitor-cli.js",
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -13,6 +13,8 @@
   },
   "keywords": [
     "ping",
+    "network",
+    "monitor",
     "logger"
   ],
   "author": "Sergey Panpurin",
