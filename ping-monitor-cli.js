@@ -1,14 +1,15 @@
 const meow = require('meow');
-const PingLogger = require('./ping-logger');
+const PingMonitor = require('./ping-monitor');
 
 const cli = meow(`
 	Usage
-	  $ ping-logger <target>
+	  $ node ping-monitor-cli.js <target>
 	Options
 	  --timeout -t     Ping request timeout in milliseconds
 	  --interval -i    Time in milliseconds between requests
-	  --no-save
-	  --verbose -v     Output more detailed information
+	  --no-save        Do not save results
+	  --no-histogram   Hide histogram
+	  --verbose        Output more detailed information
 `, {
 	flags: {
 		timeout: {
@@ -25,14 +26,16 @@ const cli = meow(`
 			type: 'boolean',
 			default: true
 		},
+		histogram: {
+			type: 'boolean',
+			default: true
+		},
 		verbose: {
             type: 'boolean',
-            default: false,
-			alias: 'v'
+            default: false
 		}
 	}
 });
 
-pingLogger = new PingLogger(cli.input[0], cli.flags);
-
-pingLogger.start();
+pingMonitor = new PingMonitor(cli.input[0], cli.flags);
+pingMonitor.start();

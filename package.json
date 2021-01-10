@@ -27,5 +27,9 @@
     "log-update": "^4.0.0",
     "meow": "^8.1.0",
     "net-ping": "^1.2.3"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^8.2.1"
   }
 }

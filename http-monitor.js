@@ -1,56 +1,85 @@
 const http = require('http');
 const https = require('https');
 const logUpdate = require('log-update');
-const { setInterval } = require('timers');
-const { DelayStatistic } = require('./utils');
+const { DelayStatistic } = require('./utils/statistic');
+const chart = require('./utils/chart');
 
-const MAX_DELAY = 2000;
 const SPINNER = ['-', '\\', '|', '/'];
+const LABELS = ['(-∞, 0.0)', '[0.0,0.2)', '[0.2,0.4)', '[0.4,0.6)', '[0.6,0.8)', '[0.8,1.0)', '[1.0,1.2)', '[1.2,1.4)', '[1.4,1.6)', '[1.6,1.8)', '[2.0, +∞)'];
+
+/**
+ * Trims line to console width.
+ * @param {string} line - original line
+ * @return {string} - trimmed line
+ */
+function trimLine(line) {
+    const n = process.stdout.columns;
+    return line.length >= n ? (line.substring(0, n - 1) + "░") : line;
+}
 
 class HttpMonitor {
-    constructor(target, interval) {
+    constructor(target, options) {
+        // Target url
         this._target = target || 'https://network-tools.herokuapp.com/';
-        this._interval = interval || 2000;
 
+        // Options
+        this._options = options;
+
+        // Http client
         this._client = this._target.includes('https') ? https : http;
 
-        this._requestTime = new DelayStatistic(MAX_DELAY);
-        this._responseTime = new DelayStatistic(MAX_DELAY);
-        this._receiveTime = new DelayStatistic(MAX_DELAY);
-        this._finishTime = new DelayStatistic(MAX_DELAY);
+        // Response delay statistics
+        this._delay = new DelayStatistic(2000, 10, LABELS);
 
+        // Status text
         this._text = 'Loading...\n';
-        
+
+        // Number of sent requests
         this._sent = 0;
+        
+        // Number of received responses
         this._received = 0;
+
+        // Number of failed requests
         this._failed = 0;
 
+        // Current spinner frame
         this._frame = 0;
+        
+        // Seconds per frame
         this._spf = 250;
-        this._render = '[...ms]';
+
+        // Rendering time as a text
+        this._rending = '[...ms]';
     }
 
+    /**
+     * Starts http monitor.
+     */
     start() {
-        this._loadVersions();
+        // Start target loading cycle.
+        this._loadTarget();
 
         setInterval(() => {
-            this._loadVersions();
-        }, this._interval);
+            this._loadTarget();
+        }, this._options.interval);
 
+        // Start output update cycle.
         setInterval(() => {
             this._nextFrame();
             this._renderFrame();
         }, this._spf);
     }
 
-    _loadVersions() {
+    /**
+     * Load target url and update statistics.
+     */
+    _loadTarget() {
         const sent = Date.now();
         this._sent++;
 
         this._client.get(this._target, (res) => {
             this._received++;
-            const received = Date.now();
-            this._receiveTime.update(received - sent);
 
             const { statusCode } = res;
             const contentType = res.headers['content-type'];
@@ -78,16 +107,14 @@ class HttpMonitor {
             res.on('data', (chunk) => { rawData += chunk; });
             res.on('end', () => {
                 const finished = Date.now();
-                this._finishTime.update(finished - sent);
+                this._delay.update((finished - sent));
                 this._text = `HTTP Monitor for ${this._target}\n`;
                 this._text += `Data received: ${rawData.length}\n`;
                 this._text += `Sent: ${this._sent}, Received: ${this._received}, Failed: ${this._failed}\n`
-                this._text += `Total time   : ${this._finishTime.text}\n`;
-                this._text += `Receive time : ${this._receiveTime.text}\n`;
-                this._text += `Distribution\n${this._finishTime.dist}\n`;
-                this._text += `Chart\n`;
-
-                // this._renderFrame();
+                this._text += `Request time: ${this._delay.text}\n`;
+                if (this._options.histogram) {
+                    this._text += `${this._delay.histogram.print()}\n`;
+                }
             });
         }).on('error', (error) => {
             this._failed++;
@@ -96,35 +123,58 @@ class HttpMonitor {
         });
     }
 
-    _trimLine(line) {
-        const n = process.stdout.columns;
-        return line.length >= n ? (line.substring(0, n - 3) + "...") : line;
-    }
-
+    /**
+     * Returns console width double line.
+     * @returns {string} - line
+     */
     _getRule() {
-        return '='.repeat(process.stdout.columns);
+        return '═'.repeat(process.stdout.columns);
     }
 
+    /**
+     * Prepare console output.
+     * @returns {string} - console output
+     */
     _prepareOutput() {
-        const lines = (`${SPINNER[this._frame]} ${this._render} [${process.stdout.columns}x${process.stdout.rows}] ${this._text}`).split(/\r\n|\r|\n/);
-        let output = `${this._getRule()}\n` + lines.map(line => this._trimLine(line)).join('\n') + this._finishTime.chart +`\n${this._getRule()}`;
+        let prefix = SPINNER[this._frame];
 
-        const n = process.stdout.rows - output.split(/\r\n|\r|\n/).length - 1;
-        for (let i = 0; i < n; i++) {
-            output += '\n';
+        if (this._options.verbose) {
+            prefix += ` ${this._rending} [${process.stdout.columns}x${process.stdout.rows}]`;
         }
-        return output;
+
+        const lines = (`${prefix} ${this._text}`).split(/\r\n|\r|\n/);
+
+        if (this._options.chart) {
+            let output = `${this._getRule()}\n${lines.map(trimLine).join('\n')}Chart\n${chart.prepare(this._delay)}\n${this._getRule()}`;
+    
+            if (this._options.fullscreen) {
+                const n = process.stdout.rows - output.split(/\r\n|\r|\n/).length - 1;
+                for (let i = 0; i < n; i++) {
+                    output += '\n';
+                }
+            }
+
+            return output;
+        } else {
+            return lines.map(trimLine).join('\n');
+        }
     }
 
+    /**
+     * Updates spinner frame.
+     */
     _nextFrame() {
         this._frame = ++this._frame % SPINNER.length;
     }
 
+    /**
+     * Update console output.
+     */
     _renderFrame() {
         const start = Date.now();
         logUpdate(this._prepareOutput());
         const end = Date.now();
-        this._render = `[${(end - start).toFixed(0).padStart(3, ' ')}ms]`;
+        this._rending = `[${(end - start).toFixed(0).padStart(3, ' ')}ms]`;
     }
 }
 
