@@ -1,7 +1,7 @@
 {
-  "name": "ping-logger",
+  "name": "network-quality-monitor",
   "version": "0.1.0",
-  "description": "Simple ping monitor to check ping over the time.",
+  "description": "Tools for long-term monitoring of network quality.",
   "main": "ping-monitor-cli.js",
   "scripts": {
     "start": "node ping-monitor-cli.js",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/edwinofsakh/ping-logger.git"
+    "url": "git+https://github.com/edwinofsakh/network-quality-monitor.git"
   },
   "keywords": [
     "ping",
@@ -24,9 +24,9 @@
   "author": "Sergey Panpurin",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/edwinofsakh/ping-logger/issues"
+    "url": "https://github.com/edwinofsakh/network-quality-monitor/issues"
   },
-  "homepage": "https://github.com/edwinofsakh/ping-logger#readme",
+  "homepage": "https://github.com/edwinofsakh/network-quality-monitor#readme",
   "dependencies": {
     "asciichart": "^1.5.25",
     "csv-write-stream": "^2.0.0",

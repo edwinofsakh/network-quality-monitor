@@ -1,21 +1,27 @@
-# Ping Monitor
+# NQM - Network Quality Monitor
 
-Simple ping monitor to check ping over the time.
+Tools for long-term monitoring of network quality.
 
-# Installation
+## Installation
 
 ```bash
-$ npm install ping-logger
+$ npm install network-quality-monitor
 ```
 
-# Usage
+## Usage
 
 ```bash
 $ node ping-monitor-cli.js --help
 $ node http-monitor-cli.js --help
 ```
 
-# License
+## History
+
+**0.1**
+
+- First release.
+
+## License
 
 ```
 MIT License
