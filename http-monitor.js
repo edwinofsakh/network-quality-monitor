@@ -2,7 +2,7 @@ const http = require('http');
 const https = require('https');
 
 const chart = require('./utils/chart');
-const { DelayStatistic } = require('./utils/statistic');
+const { DelayStatistics } = require('./utils/statistics');
 const { ConsoleApplication } = require('./utils/console');
 
 const LABELS = ['(-∞, 0.0)', '[0.0,0.2)', '[0.2,0.4)', '[0.4,0.6)', '[0.6,0.8)', '[0.8,1.0)', '[1.0,1.2)', '[1.2,1.4)', '[1.4,1.6)', '[1.6,1.8)', '[2.0, +∞)'];
@@ -12,7 +12,7 @@ class HttpMonitor extends ConsoleApplication {
         super();
 
         // Target url
-        this._target = target || 'https://network-tools.herokuapp.com/';
+        this._target = target || 'https://network-tools.herokuapp.com/time';
 
         // Options
         this._options = options;
@@ -21,7 +21,7 @@ class HttpMonitor extends ConsoleApplication {
         this._client = this._target.includes('https') ? https : http;
 
         // Response delay statistics
-        this._delay = new DelayStatistic(2000, 10, LABELS);
+        this._delay = new DelayStatistics(2000, 10, LABELS);
 
         // Status text
         this._text = 'Loading...\n';
@@ -34,6 +34,12 @@ class HttpMonitor extends ConsoleApplication {
 
         // Number of failed requests
         this._failed = 0;
+
+        // Task interval handler
+        this._taskLoop = null;
+
+        // Render interval handler
+        this._renderLoop = null;
     }
 
     /**
@@ -42,10 +48,18 @@ class HttpMonitor extends ConsoleApplication {
     start() {
         // Starts target loading cycle.
         this._loadTarget();
-        setInterval(() => this._loadTarget(), this._options.interval);
+        this._taskLoop = setInterval(() => this._loadTarget(), this._options.interval);
 
         // Starts rendering cycle.
-        setInterval(() => this._render(), this._spf);
+        this._renderLoop = setInterval(() => this._render(), this._spf);
+    }
+
+    /**
+     * Stops http monitor.
+     */
+    stop() {
+        if (this._taskLoop) clearInterval(this._taskLoop);
+        if (this._renderLoop) clearInterval(this._renderLoop);
     }
 
     /**
@@ -66,7 +80,7 @@ class HttpMonitor extends ConsoleApplication {
             // here we're only checking for 200.
             if (statusCode !== 200) {
                 error = new Error(`Request Failed.\nStatus Code: ${statusCode}`);
-            } else if (!(contentType === 'application/json' || contentType === 'text/html')) {
+            } else if (!(contentType.indexOf('application/json') > -1 || contentType === 'text/html')) {
                 error = new Error(`Invalid content-type.\nExpected application/json or text/html but received ${contentType}`);
             }
 

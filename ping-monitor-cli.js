@@ -37,5 +37,5 @@ const cli = meow(`
 	}
 });
 
-pingMonitor = new PingMonitor(cli.input[0], cli.flags);
+const pingMonitor = new PingMonitor(cli.input[0], cli.flags);
 pingMonitor.start();

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const ping = require('net-ping');
 const csvWriter = require('csv-write-stream');
-const { DelayStatistic } = require('./utils/statistic');
+const { DelayStatistics } = require('./utils/statistics');
 const { ConsoleApplication } = require('./utils/console');
 
 const SUCCESS = 'Success';
@@ -16,9 +16,11 @@ class PingMonitor extends ConsoleApplication {
         this._lastResponse = 'NA';
 
         this._sent = 0;
-        this._delay = new DelayStatistic(200, 8);
+        this._delay = new DelayStatistics(200, 8);
 
         this._statuses = {};
+
+        this._session = null;
 
         this._filename = '';
         this._writer = null;
@@ -27,6 +29,12 @@ class PingMonitor extends ConsoleApplication {
         if (this._options.save) {
             this._filename = path.join('.', 'results', `ping-monitor-${this._target}-${Date.now()}.csv`);
         }
+
+        // Task interval handler
+        this._taskLoop = null;
+
+        // Render interval handler
+        this._renderLoop = null;
     }
 
     /**
@@ -36,13 +44,20 @@ class PingMonitor extends ConsoleApplication {
         this._printSettings();
         this._initWriter();
         this._initSession();
-        
+
         // Starts ping cycle.
         this._pingTarget();
-        setInterval(() => this._pingTarget(), this._options.interval);
+        this._taskLoop = setInterval(() => this._pingTarget(), this._options.interval);
 
         // Starts rendering cycle.
-        setInterval(() => this._render(), this._spf);
+        this._renderLoop = setInterval(() => this._render(), this._spf);
+    }
+
+    stop() {
+        if (this._taskLoop) clearInterval(this._taskLoop);
+        if (this._renderLoop) clearInterval(this._renderLoop);
+        if (this._writer) this._writer.end();
+        if (this._session) this._session.close();
     }
 
     /**
@@ -96,11 +111,11 @@ class PingMonitor extends ConsoleApplication {
      * Initializes ping session.
      */
     _initSession() {
-        this.session = ping.createSession({ timeout: this._options.timeout, retries: 0 });
+        this._session = ping.createSession({ timeout: this._options.timeout, retries: 0 });
         this._clear();
         this._log('New session was created');
 
-        this.session.on('error', (error) => {
+        this._session.on('error', (error) => {
             this._clear();
 
             if (error) {
@@ -109,10 +124,10 @@ class PingMonitor extends ConsoleApplication {
                 this._log('(Error) Unknown socket error');
             }
 
-            this.session.close();
+            this._session.close();
         });
 
-        this.session.on('close', () => {
+        this._session.on('close', () => {
             this._clear();
             this._log('Session was closed');
         });
@@ -122,7 +137,7 @@ class PingMonitor extends ConsoleApplication {
      * Pings target ip.
      */
     _pingTarget() {
-        this.session.pingHost(this._target, (error, _target, sent, received) => {
+        this._session.pingHost(this._target, (error, _target, sent, received) => {
             const ping = received - sent;
             const status = error ? error.constructor.name : 'Success';
             const message = error ? error.message.trim() : 'Done';
@@ -156,7 +171,7 @@ class PingMonitor extends ConsoleApplication {
      */
     _updateStatistics(status, ping) {
         this._sent++;
-        
+
         this._statuses[status] = (this._statuses[status] || 0) + 1;
 
         if (status === SUCCESS) {

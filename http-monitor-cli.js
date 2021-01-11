@@ -37,6 +37,5 @@ const cli = meow(`
 	}
 });
 
-httpMonitor = new HttpMonitor(cli.input[0], cli.flags);
-
+const httpMonitor = new HttpMonitor(cli.input[0], cli.flags);
 httpMonitor.start();

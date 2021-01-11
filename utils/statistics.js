@@ -1,21 +1,21 @@
 const { Histogram } = require('./histogram');
 
-class Statistic {
-    constructor(min, max, bins, labels) {
+class Statistics {
+    constructor(min, max, bins, labels, size) {
+        // Overall statistics
         this._count = 0;
         this._mean = 0;
         this._min = Number.POSITIVE_INFINITY;
         this._max = Number.NEGATIVE_INFINITY;
 
-        this._recent = { size: 100, values: [] };
-        this._history = [];
+        this._overall = {};
+        this._recent = { size: size || 100, values: [] };
 
+        // Overall histogram
         this._histogram = new Histogram(min, max, bins, labels);
     }
 
     update(value) {
-        this._history.push(value);
-
         this._recent.values.push(value);
         if (this._recent.values.length > this._recent.size) {
             this._recent.values.shift();
@@ -55,16 +55,12 @@ class Statistic {
         return this._recent.values;
     }
 
-    get history() {
-        return this._history;
-    }
-
     get histogram() {
         return this._histogram;
     }
 }
 
-class DelayStatistic extends Statistic {
+class DelayStatistics extends Statistics {
     constructor(max, k, labels) {
         super(0, max, k, labels);
     }
@@ -74,5 +70,5 @@ class DelayStatistic extends Statistic {
     }
 }
 
-module.exports.Statistic = Statistic;
-module.exports.DelayStatistic = DelayStatistic;
+module.exports.Statistics = Statistics;
+module.exports.DelayStatistics = DelayStatistics;

@@ -7,6 +7,10 @@
     "start": "node ping-monitor-cli.js",
     "test": "mocha"
   },
+  "bin": {
+    "ping-monitor": "./ping-monitor-cli.js",
+    "http-monitor": "./http-monitor-cli.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/edwinofsakh/ping-logger.git"
