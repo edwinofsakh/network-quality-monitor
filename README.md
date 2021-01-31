@@ -17,7 +17,11 @@ $ node http-monitor-cli.js --help
 
 ## History
 
-**0.1**
+**0.2.0**
+
+- Add statistics for period.
+
+**0.1.0**
 
 - First release.
 
