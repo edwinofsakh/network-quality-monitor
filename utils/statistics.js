@@ -1,6 +1,17 @@
 const { Histogram } = require('./histogram');
 
+/**
+ * Statistics class
+ */
 class Statistics {
+    /**
+     * 
+     * @param {number} min - expected minimum value
+     * @param {number} max - expected maximum value
+     * @param {number} bins - number of bins
+     * @param {string[]} labels - labels
+     * @param {number} size - size of buffer for recent values
+     */
     constructor(min, max, bins, labels, size) {
         // Overall statistics
         this._count = 0;
@@ -8,12 +19,17 @@ class Statistics {
         this._min = Number.POSITIVE_INFINITY;
         this._max = Number.NEGATIVE_INFINITY;
 
+        // ???
         this._recent = { size: size || 100, values: [] };
 
         // Overall histogram
         this._histogram = new Histogram(min, max, bins, labels);
     }
 
+    /**
+     * 
+     * @param {number} value - new value
+     */
     update(value) {
         this._recent.values.push(value);
         if (this._recent.values.length > this._recent.size) {
@@ -108,9 +124,18 @@ class Statistics {
     }
 }
 
+/**
+ * DelayStatistics class
+ */
 class DelayStatistics extends Statistics {
-    constructor(max, k, labels) {
-        super(0, max, k, labels);
+    /**
+     * 
+     * @param {number} max - expected maximum value
+     * @param {number} bins - number of bins
+     * @param {string[]} labels - labels
+     */
+    constructor(max, bins, labels) {
+        super(0, max, bins, labels);
     }
 
     get text() {

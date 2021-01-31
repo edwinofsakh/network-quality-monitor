@@ -1,4 +1,14 @@
+/**
+ * Histogram class
+ */
 class Histogram {
+    /**
+     * 
+     * @param {number} min - expected minimum value
+     * @param {number} max - expected maximum value
+     * @param {number} k - number of bins
+     * @param {string[]} labels - labels
+     */
     constructor(min, max, k, labels) {
         // the number of values
         this._n = 0;

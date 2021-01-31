@@ -5,6 +5,8 @@ const { DelayStatistics } = require('./statistics');
 const SUCCESS = 'Success';
 
 /**
+ * GeneralMonitor class
+ * 
  * Events: start, stop, error, update, period
  */
 class GeneralMonitor extends EventEmitter {

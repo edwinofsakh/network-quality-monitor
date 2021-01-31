@@ -1,13 +1,12 @@
-
-const EventEmitter = require('events').EventEmitter;
 const logUpdate = require('log-update');
-const { DelayStatistics } = require('./statistics');
 const utils = require('./index');
 const chart = require('./chart');
 
-const SUCCESS = 'Success';
 const SPINNER = ['-', '\\', '|', '/'];
 
+/**
+ * ConsoleClient class
+ */
 class ConsoleClient {
     /**
      * 
@@ -194,7 +193,7 @@ class ConsoleClient {
 }
 
 /**
- * 
+ * MonitorClient class
  */
 class MonitorClient extends ConsoleClient {
     /**

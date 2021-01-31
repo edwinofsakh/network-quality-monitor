@@ -11,7 +11,7 @@ class RequestTimedOutError extends Error {
 }
 
 /**
- * Monitoring http url
+ * HttpMonitor class
  * 
  * Events: start, stop, error, close, update, period
  */

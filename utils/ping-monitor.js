@@ -2,7 +2,7 @@ const ping = require('net-ping');
 const { GeneralMonitor } = require('./monitor');
 
 /**
- * Monitoring ping for target ip
+ * PingMonitor class
  * 
  * Events: start, stop, error, close, update, period
  */
