@@ -8,7 +8,6 @@ class Statistics {
         this._min = Number.POSITIVE_INFINITY;
         this._max = Number.NEGATIVE_INFINITY;
 
-        this._overall = {};
         this._recent = { size: size || 100, values: [] };
 
         // Overall histogram
@@ -42,11 +41,30 @@ class Statistics {
     get mean() {
         return this._count == 0 ? 0 : this._mean;
     }
-
+    
     get min() {
         return this._count == 0 ? 0 : this._min;
     }
 
+    get mdn() {
+        return this._histogram.percentile(50);
+    }
+
+    get avg() {
+        return this.mean;
+    }
+
+    get p90() {
+        return this._histogram.percentile(90);
+    }
+
+    get p95() {
+        return this._histogram.percentile(95);
+    }
+
+    get p99() {
+        return this._histogram.percentile(99);
+    }
     get max() {
         return this._count == 0 ? 0 : this._max;
     }
@@ -57,6 +75,36 @@ class Statistics {
 
     get histogram() {
         return this._histogram;
+    }
+
+    static percentile(values, p) {
+        const n = values.length;
+        if (n === 0) {
+            return 0;
+        } else {
+            if (p <= 0) {
+                return values[0];
+            } else if (p >= 100) {
+                return values[n - 1];
+            } else {
+                return values[Math.ceil(p * n / 100) - 1];
+            }
+        }
+    }
+    
+    static stats(values) {
+        values.sort((a, b) => a - b);
+        const n = values.length;
+
+        return {
+            min: Statistics.percentile(values, 0),
+            mdn: Statistics.percentile(values, 50),
+            avg: n ? (values.reduce((avg, value) => (avg + value), 0) / n) : 0,
+            p90: Statistics.percentile(values, 90),
+            p95: Statistics.percentile(values, 95),
+            p99: Statistics.percentile(values, 99),
+            max: Statistics.percentile(values, 100),
+        };
     }
 }
 

@@ -1,5 +1,10 @@
 const chart = require('asciichart');
+const { Statistics } = require('./statistics');
 
+/**
+ * Prepares test chart.
+ * @param {Statistics} stat - statistics
+ */
 function prepare(stat) {
     const n = Math.min(stat.values.length, process.stdout.columns - 7);
     const options = getChartOptions();
@@ -15,6 +20,10 @@ function prepare(stat) {
     return chart.plot([stat.values.slice(-n), Array(n).fill(stat.mean)], options);
 }
 
+/**
+ * Prepares chart options
+ * @returns {object} - chart options
+ */
 function getChartOptions() {
     const padding = '     ';
 
@@ -25,6 +34,10 @@ function getChartOptions() {
     };
 }
 
+/**
+ * Returns chart height.
+ * @returns {number} - chart height
+ */
 function getChartHeight() {
     return Math.min(24, process.stdout.rows - 8 - 5);
 }
