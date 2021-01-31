@@ -232,7 +232,7 @@ class MonitorClient extends ConsoleClient {
             this._render();
         });
 
-        this._periodLabel = `Last ${utils.getNumberText(this._options.period, 'min', 'mins')}`;
+        this._periodLabel = `Last ${utils.getNumberText(this._monitor.options.period, 'min', 'mins')}`;
     }
 
     /**
@@ -246,17 +246,11 @@ class MonitorClient extends ConsoleClient {
      * Prints settings.
      */
     _printSettings() {
-        const protocol = 'IPv4';
-        const interval = this._options.interval;
-        const timeout = this._options.timeout;
-        const period = this._options.period;
-        const size = 32;
-        const ttl = 128;
+        const opt = this._monitor.options;
 
         this._print('');
-        this._print(`Ping Monitor for 1.1.1.1`);
-        this._print(`Protocol=${protocol}, Interval=${interval}ms, Timeout=${timeout}ms, Size=${size}, TTL=${ttl}`);
-        this._print(`Period=${period}m`);
+        this._print(`${this._monitor.constructor.name} for ${this._monitor.target}`);
+        this._print(`Interval=${opt.interval}ms, Timeout=${opt.timeout}ms, Period=${opt.period}m`);
         this._print(`Log:`);
         this._log(`Started`);
     }

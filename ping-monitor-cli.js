@@ -13,7 +13,7 @@ const cli = meow(`
 	  --no-chart       Hide real time chart
 	  --verbose        Show debug information
 `, {
-    description: 'Ping monitor helps you to monitor server availability',
+    description: 'PingMonitor helps you to monitor server availability',
     flags: {
         timeout: {
             type: 'number',

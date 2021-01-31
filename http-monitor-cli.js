@@ -6,13 +6,14 @@ const cli = meow(`
 	Usage
 	  $ node http-monitor-cli.js <target url>
 	Options
-	--timeout -t     Request timeout in milliseconds
-	--interval -i    Time between requests in milliseconds
-	--period -p      Period for calculating intermediate statistics in minutes
-	--no-save        Do not save results
-	--no-chart       Hide real time chart
-	--verbose        Show debug information
+	  --timeout -t     Request timeout in milliseconds
+	  --interval -i    Time between requests in milliseconds
+	  --period -p      Period for calculating intermediate statistics in minutes
+	  --no-save        Do not save results
+	  --no-chart       Hide real time chart
+	  --verbose        Show debug information
 `, {
+    description: 'HttpMonitor helps you to monitor server availability',
 	flags: {
 		timeout: {
             type: 'number',
