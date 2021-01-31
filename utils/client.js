@@ -1,6 +1,10 @@
+const fs = require('fs');
+const path = require('path');
+const csvWriter = require('csv-write-stream');
 const logUpdate = require('log-update');
 const utils = require('./index');
 const chart = require('./chart');
+const { GeneralMonitor } = require('./monitor');
 
 const SPINNER = ['-', '\\', '|', '/'];
 
@@ -24,15 +28,6 @@ class ConsoleClient {
 
         // Test mode
         this._testing = options.testing !== undefined ? options.testing : false;
-    }
-
-    /**
-     * Formats date.
-     * @param {Date} date - date
-     * @returns {string} - text
-     */
-    _formatDate(date) {
-        return date.toISOString().replace(/-/g, '').replace(/:/g, '').replace('.', '');
     }
 
     /**
@@ -192,6 +187,51 @@ class ConsoleClient {
     }
 }
 
+class MonitorWriter {
+    constructor(prefix, headers) {
+        this._headers = headers;
+        this._dir = path.join('.', 'results');
+        this._filename = path.join('.', 'results', `${prefix}-${Date.now()}.csv`);
+        this._writer = null;
+        this._stream = null;
+    }
+
+    get filename() {
+        return this._filename;
+    }
+
+    init() {
+        const failed = false;
+        try {
+            fs.accessSync(this._dir, fs.constants.R_OK | fs.constants.W_OK);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                fs.mkdirSync(dir);
+            } else {
+                failed = true;
+            }
+        }
+
+        if (!failed) {
+            this._writer = csvWriter({ headers: this._headers });
+            this._stream = fs.createWriteStream(this._filename);
+            this._writer.pipe(this._stream);
+        }
+    }
+
+    write(values) {
+        if (this._writer) {
+            this._writer.write(values);
+        }
+    }
+
+    end() {
+        if (this._writer) {
+            this._writer.end();
+        }
+    }
+}
+
 /**
  * MonitorClient class
  */
@@ -212,6 +252,7 @@ class MonitorClient extends ConsoleClient {
         });
 
         this._monitor.on('start', () => {
+            if (this._writer) this._writer.init();
             this._printSettings();
 
             // Starts rendering cycle.
@@ -220,6 +261,7 @@ class MonitorClient extends ConsoleClient {
 
         this._monitor.on('stop', () => {
             if (this._renderLoop) clearInterval(this._renderLoop);
+            if (this._writer) this._writer.end();
         });
 
         this._monitor.on('update', () => {
@@ -232,6 +274,9 @@ class MonitorClient extends ConsoleClient {
         });
 
         this._periodLabel = `Last ${utils.getNumberText(this._monitor.options.period, 'min', 'mins')}`;
+
+        const headers = ['Date', 'Sent', 'Lost', 'Min', 'Mdn', 'Avg', '90%', '95%', '99%', 'Max'];
+        this._writer = (this._options.save) ? new MonitorWriter(this._monitor.prefix, headers) : null;
     }
 
     /**
@@ -250,6 +295,9 @@ class MonitorClient extends ConsoleClient {
         this._print('');
         this._print(`${this._monitor.constructor.name} for ${this._monitor.target}`);
         this._print(`Interval=${opt.interval}ms, Timeout=${opt.timeout}ms, Period=${opt.period}m`);
+        if (this._writer) {
+            this._print(`Results: ${this._writer.filename}`);
+        }
         this._print(`Log:`);
         this._log(`Started`);
     }
@@ -261,6 +309,11 @@ class MonitorClient extends ConsoleClient {
     _onPeriod() {
         const r = this._monitor.recent;
         this._log(`Packets sent ${r.sent} (${(r.lost / r.sent * 100).toFixed(1)}% loss), Latency mdn = ${Math.floor(r.stats.mdn)}ms, 90% = ${Math.floor(r.stats.p90)}ms`);
+
+        if (this._writer) {
+            const values = [r.stats.min, r.stats.mdn, r.stats.avg, r.stats.p90, r.stats.p95, r.stats.p99, r.stats.max].map(i => i.toFixed(1));
+            this._writer.write([(new Date()).toISOString(), r.sent, r.lost].concat(values));
+        }
     }
 
     /**
@@ -271,7 +324,7 @@ class MonitorClient extends ConsoleClient {
         if (!this._monitor.overall.received && !this._monitor.overall.lost) {
             return 'Waiting for response...';
         }
-        
+
         const spinner = this._printSpinner();
         const debug = this._options.verbose ? ' ' + this._printDebugInfo() : '';
 
@@ -295,7 +348,7 @@ class MonitorClient extends ConsoleClient {
         const stats = ['min', 'mdn', 'avg', 'p90', 'p95', 'p99', 'max'];
 
         return this._printTable(
-            [16, width, width, width, width, width, width, width], ' ', ' ', '\n',
+            [18, width, width, width, width, width, width, width], ' ', ' ', '\n',
             [
                 ['Latency (ms)', 'min', 'mdn', 'avg', '90%', '95%', '99%', 'max'],
                 ['    ' + this._periodLabel, ...stats.map(i => this._monitor.recent.stats[i].toFixed(0))],
@@ -312,7 +365,7 @@ class MonitorClient extends ConsoleClient {
         const width = Math.max(9, this._monitor.recent.sent.toFixed(0).length, this._monitor.overall.sent.toFixed(0).length);
 
         return this._printTable(
-            [16, width, width, width, 11], ' ', ' ', '\n',
+            [18, width, width, width, 11], ' ', ' ', '\n',
             [
                 ['Packets', 'sent', 'received', 'lost', ''],
                 ['    ' + this._periodLabel, ...this._getPacketStats(this._monitor.recent)],

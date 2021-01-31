@@ -33,6 +33,10 @@ class PingMonitor extends GeneralMonitor {
         });
     }
 
+    get prefix() {
+        return 'ping-monitor';
+    }
+
     get target() {
         return this._target;
     }

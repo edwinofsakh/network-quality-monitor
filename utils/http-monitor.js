@@ -37,6 +37,10 @@ class HttpMonitor extends GeneralMonitor {
         });
     }
 
+    get prefix() {
+        return 'http-monitor';
+    }
+
     get target() {
         return this._target;
     }

@@ -51,8 +51,12 @@ class GeneralMonitor extends EventEmitter {
         this._taskInterval = null;
     }
 
+    get prefix() {
+        return 'monitor';
+    }
+
     get last() {
-        return this._buffer[this._buffer.length - 1];
+        return this._last;
     }
 
     get overall() {
@@ -137,7 +141,8 @@ class GeneralMonitor extends EventEmitter {
 
         // Update recent statistics
         const now = Date.now();
-        this._buffer.push([sent, ping, status, message]);
+        this._last = [sent, ping, status, message];
+        this._buffer.push(this._last);
         this._buffer = this._buffer.filter(item => item[0] >= (now - this._options.period * 60000));
 
         let delays = [];
