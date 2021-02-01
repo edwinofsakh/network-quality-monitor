@@ -32,6 +32,7 @@
     "bufferutil": "^4.0.3",
     "csv-write-stream": "^2.0.0",
     "debug": "^4.3.1",
+    "express": "^4.17.1",
     "log-update": "^4.0.0",
     "meow": "^8.1.0",
     "net-ping": "^1.2.3",

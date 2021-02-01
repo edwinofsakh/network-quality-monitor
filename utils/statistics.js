@@ -67,7 +67,7 @@ class Statistics {
     }
 
     get avg() {
-        return this.mean;
+        return Math.round(this.mean);
     }
 
     get p90() {
@@ -115,13 +115,25 @@ class Statistics {
         return {
             min: Statistics.percentile(values, 0),
             mdn: Statistics.percentile(values, 50),
-            avg: n ? (values.reduce((avg, value) => (avg + value), 0) / n) : 0,
+            avg: n ? Math.round(values.reduce((avg, value) => (avg + value), 0) / n) : 0,
             p90: Statistics.percentile(values, 90),
             p95: Statistics.percentile(values, 95),
             p99: Statistics.percentile(values, 99),
             max: Statistics.percentile(values, 100),
         };
     }
+
+    toJSON() {
+        return {
+            min: this.min,
+            mdn: this.mdn,
+            avg: this.avg,
+            p90: this.p90,
+            p95: this.p95,
+            p99: this.p99,
+            max: this.max
+        };
+      }
 }
 
 /**

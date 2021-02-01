@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>PingMonitor</title>
+  <meta name="description" content="Web interface for PingMonitor">
+  <meta name="author" content="Sergey Panpurin">
+
+  <script src="https://cdn.zingchart.com/zingchart.min.js"></script>
+
+  <style>
+    input,
+    textarea {
+      padding: 6px;
+      line-height: 1.5;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-shadow: 1px 1px 1px #999;
+      font: .8rem 'Fira Sans', sans-serif;
+    }
+
+    input {
+      min-width: 200px;
+    }
+
+    textarea {
+      min-width: calc(100% - 12px);
+      min-height: 30px;
+    }
+
+    label {
+      display: block;
+      font: 1rem 'Fira Sans', sans-serif;
+      margin: 12px 0 4px 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>PingMonitor</h1>
+
+  <!-- <label>Host</label> -->
+  <!-- <input data-jsref="host" type="text" value="localhost:3000"> -->
+  <!-- <button data-jsref="connect" type="button">Connect</button> -->
+
+  <label for="settings">Settings</label>
+  <textarea data-jsref="settings" id="settings" name="settings" disabled></textarea>
+
+  <label for="response">Response</label>
+  <textarea data-jsref="response" id="response" name="response" disabled></textarea>
+
+  <label for="recent">Recent</label>
+  <textarea data-jsref="recent" id="recent" name="recent" disabled></textarea>
+
+  <label for="overall">Overall</label>
+  <textarea data-jsref="overall" id="overall" name="overall" disabled></textarea>
+
+  <div id='RealtimeChart'></div>
+  <div id='PacketsChart'></div>
+  <div id='LatencyChart'></div>
+
+  <script>
+    // const elHost = document.querySelector('[data-jsref="host"]');
+    // const elConnect = document.querySelector('[data-jsref="connect"]');
+    const elSettings = document.querySelector('[data-jsref="settings"]');
+    const elResponse = document.querySelector('[data-jsref="response"]');
+    const elRecent = document.querySelector('[data-jsref="recent"]');
+    const elOverall = document.querySelector('[data-jsref="overall"]');
+
+    // elConnect.onclick = onConnect;
+
+    let ws;
+    let settings;
+    let pings;
+    let loss;
+    let mdn;
+    let p90;
+    let p99;
+
+    buildCharts();
+
+    reset();
+
+    connect(window.location.host);
+
+    function reset() {
+      elSettings.value = '';
+      elResponse.value = '';
+
+      pings = [];
+      loss = [];
+      mdn = [];
+      p90 = [];
+      p99 = [];
+
+      updateRealtimeChart([]);
+      updatePeriodCharts([], [], [], []);
+    }
+
+    function updateRealtimeChart(values) {
+      zingchart.exec('RealtimeChart', 'setseriesvalues', { values: [values] });
+    }
+
+    function updatePeriodCharts(loss, mdn, p90, p99) {
+      zingchart.exec('PacketsChart', 'setseriesvalues', { values: [loss] });
+      zingchart.exec('LatencyChart', 'setseriesvalues', { values: [p99, p90, mdn] });
+    }
+
+    function connect(host) {
+      try {
+        if (ws) ws.close();
+
+        reset();
+
+        ws = new WebSocket('ws://' + host + '/websocket/');
+
+        ws.onerror = function (event) {
+          elResponse.value = 'Connection Error';
+          console.error(event);
+        };
+
+        ws.onopen = function () {
+          elResponse.value = 'Connection opened';
+          ws.send(JSON.stringify({ type: "open", payload: null }));
+        };
+
+        ws.onclose = function (event) {
+          elResponse.value = 'Connection closed';
+          console.log(event);
+        };
+
+        ws.onmessage = function (event) {
+          try {
+            const msg = JSON.parse(event.data);
+            console.log(msg);
+            switch (msg.type) {
+              case 'ping-settings':
+                onSettings(msg.payload);
+                break;
+              case 'ping-update':
+                onUpdate(msg.payload);
+                break;
+              case 'ping-period':
+                onPeriod(msg.payload);
+                break;
+              case 'ping-history':
+                onHistory(msg.payload);
+                break;
+              default:
+                break;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        };
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    function buildCharts() {
+      zingchart.render({
+        id: 'RealtimeChart',
+        data: {
+          type: "area",
+          title: {
+            text: 'Realtime Latency',
+            adjustLayout: true,
+            fontSize: 14,
+          },
+          plot: {
+            aspect: 'stepped',
+          },
+          plotarea: {
+            margin: 'dynamic'
+          },
+          series: [
+            {
+              values: []
+            }
+          ]
+        },
+        height: 180,
+        width: '100%',
+        defaults: {
+          palette: {
+            area: [
+              ["#ffffff", "#28a2cc", "#28a2cc", "#28a2cc"],
+              ["#ffffff", "#d31e1e", "#d31e1e", "#d31e1e"],
+            ]
+          }
+        }
+      });
+
+      zingchart.render({
+        id: 'PacketsChart',
+        data: {
+          type: "area",
+          title: {
+            text: 'Packets Statistics',
+            adjustLayout: true,
+            fontSize: 14,
+          },
+          legend: {},
+          plot: {
+            aspect: 'stepped',
+          },
+          plotarea: {
+            margin: 'dynamic'
+          },
+          scaleX: {
+            transform: {
+              type: 'date',
+              all: '%H:%i'
+              // all: '%m/%d/%y<br>%h:%i %A'
+            }
+          },
+          series: [
+            {
+              text: "% loss",
+              values: []
+            }
+          ]
+        },
+        height: 180,
+        width: '100%',
+        defaults: {
+          palette: {
+            area: [
+              ["#ffffff", "#d31e1e", "#d31e1e", "#d31e1e"],
+            ]
+          }
+        }
+      });
+
+      zingchart.render({
+        id: 'LatencyChart',
+        data: {
+          type: "area",
+          title: {
+            text: 'Latency Statistics',
+            adjustLayout: true,
+            fontSize: 14,
+          },
+          legend: {},
+          plot: {
+            aspect: 'stepped',
+          },
+          plotarea: {
+            margin: 'dynamic'
+          },
+          scaleX: {
+            transform: {
+              type: 'date',
+              all: '%H:%i'
+              // all: '%m/%d/%y<br>%h:%i %A'
+            }
+          },
+          series: [
+            {
+              text: "99%",
+              values: []
+            },
+            {
+              text: "90%",
+              values: []
+            },
+            {
+              text: "Median",
+              values: []
+            }
+          ]
+        },
+        height: 180,
+        width: '100%',
+        defaults: {
+          palette: {
+            area: [
+              ["#ffffff", "#a3c2cc", "#a3c2cc", "#a3c2cc"],
+              ["#ffffff", "#7ab8cc", "#7ab8cc", "#7ab8cc"],
+              ["#ffffff", "#28a2cc", "#28a2cc", "#28a2cc"],
+            ]
+          }
+        }
+      });
+    }
+
+    function onSettings(payload) {
+      elSettings.value = JSON.stringify(payload);
+      settings = payload;
+    }
+
+    function onUpdate(payload) {
+      elResponse.value = JSON.stringify(payload.last);
+      elRecent.value = JSON.stringify(payload.recent);
+      elOverall.value = JSON.stringify(payload.overall);
+      pings.push(payload.last.ping);
+      pings = pings.slice(-10);
+      updateRealtimeChart(pings);
+    }
+
+    function onPeriod(payload) {
+      const stats = payload.stats;
+      loss.push([payload.date, stats.lost / stats.sent * 100]);
+      mdn.push([payload.date, stats.ping.mdn]);
+      p90.push([payload.date, stats.ping.p90]);
+      p99.push([payload.date, stats.ping.p99]);
+      loss = loss.slice(-50);
+      mdn = mdn.slice(-50);
+      p90 = p90.slice(-50);
+      p99 = p99.slice(-50);
+      updatePeriodCharts(loss, mdn, p90, p99);
+    }
+
+    function onHistory(payload) {
+      loss = [];
+      mdn = [];
+      p90 = [];
+      p99 = [];
+      payload.forEach(period => {
+        loss.push([period.date, period.stats.lost / period.stats.sent * 100]);
+        mdn.push([period.date, period.stats.ping.mdn]);
+        p90.push([period.date, period.stats.ping.p90]);
+        p99.push([period.date, period.stats.ping.p99]);
+      });
+      updatePeriodCharts(loss, mdn, p90, p99);
+    }
+
+  </script>
+</body>
+
+</html>
