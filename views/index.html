@@ -49,18 +49,28 @@
           </button>
         </div>
         <div class="p-1 col-sm-12">
+          <div class="p-2 border rounded-2">
+            <span class="fw-bold">Settings:</span> <span data-jsref="settings">N/A</span>
+          </div>
+        </div>
+        <div class="p-1 col-sm-12">
           <select data-jsref="target" class="form-select" aria-label="Target" disabled>
             <option selected disabled>Select target</option>
           </select>
         </div>
         <div class="p-1 col-sm-12">
           <div class="p-2 border rounded-2">
-            <span class="fw-bold">Settings:</span> <span data-jsref="settings">N/A</span>
+            <span class="fw-bold">Response:</span> <span data-jsref="response">N/A</span>
           </div>
         </div>
         <div class="p-1 col-sm-12">
           <div class="p-2 border rounded-2">
-            <span class="fw-bold">Last Response:</span> <span data-jsref="response">N/A</span>
+            <span class="fw-bold">Recent:</span> <span data-jsref="recent-errors">N/A</span>
+          </div>
+        </div>
+        <div class="p-1 col-sm-12">
+          <div class="p-2 border rounded-2">
+            <span class="fw-bold">Overall:</span> <span data-jsref="overall-errors">N/A</span>
           </div>
         </div>
         <div class="p-1 col-sm-6">
@@ -135,6 +145,7 @@
         </div>
       </div>
     </div>
+
   </main>
 
   <script src="https://cdn.zingchart.com/zingchart.min.js"></script>
@@ -142,7 +153,7 @@
     integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
     crossorigin="anonymous"></script>
   <script>
-        const HISTORY_LIMIT = 50;
+    const HISTORY_LIMIT = 50;
     const PING_LIMIT = 20;
 
     let ws;
@@ -159,6 +170,7 @@
       host: document.querySelector('[data-jsref="host"]'),
       target: document.querySelector('[data-jsref="target"]'),
       recent: {
+        errors: document.querySelector('[data-jsref="recent-errors"]'),
         sent: document.querySelector('[data-jsref="recent-sent"]'),
         lost: document.querySelector('[data-jsref="recent-lost"]'),
         loss: document.querySelector('[data-jsref="recent-loss"]'),
@@ -169,6 +181,7 @@
         }
       },
       overall: {
+        errors: document.querySelector('[data-jsref="overall-errors"]'),
         sent: document.querySelector('[data-jsref="overall-sent"]'),
         lost: document.querySelector('[data-jsref="overall-lost"]'),
         loss: document.querySelector('[data-jsref="overall-loss"]'),
@@ -207,13 +220,14 @@
     function onTargetChange() {
       gSelected = this.value;
 
+      updateStatistics(gHistory[gSelected].update);
       updateRealtimeChart(gHistory[gSelected].pings);
       updatePeriodCharts(gHistory[gSelected].loss, gHistory[gSelected].mdn, gHistory[gSelected].p90, gHistory[gSelected].p99);
     }
 
     function reset() {
-      el.settings.innerText = '';
-      el.response.innerText = '';
+      el.settings.innerText = 'N/A';
+      el.response.innerText = 'N/A';
 
       gHistory = {};
 
@@ -261,21 +275,26 @@
           try {
             const msg = JSON.parse(event.data);
             console.log(msg);
-            switch (msg.type) {
-              case 'ping-settings':
-                onSettings(msg.payload);
-                break;
-              case 'ping-update':
-                onUpdate(msg.payload);
-                break;
-              case 'ping-period':
-                onPeriod(msg.payload);
-                break;
-              case 'ping-history':
-                onHistory(msg.payload);
-                break;
-              default:
-                break;
+
+            if (msg.type === undefined || msg.payload === undefined) {
+              console.log('Invalid message');
+            } else {
+              switch (msg.type) {
+                case 'ping-settings':
+                  onSettings(msg.payload);
+                  break;
+                case 'ping-update':
+                  onUpdate(msg.payload);
+                  break;
+                case 'ping-period':
+                  onPeriod(msg.payload);
+                  break;
+                case 'ping-history':
+                  onHistory(msg.payload);
+                  break;
+                default:
+                  break;
+              }
             }
           } catch (e) {
             console.error(e);
@@ -424,10 +443,11 @@
           }
         }
       });
+
     }
 
     function onSettings(payload) {
-      el.settings.innerText = JSON.stringify(payload);
+      el.settings.innerText = formatJSON(payload);
       gSettings = payload;
       gSelected = payload.targets[0];
 
@@ -442,9 +462,12 @@
     }
 
     function onUpdate(payload) {
+      if (!payload.target) return;
+
       const target = payload.target;
 
       if (gHistory[target]) {
+        gHistory[target].update = payload;
         gHistory[target].pings.push(payload.last.ping);
         gHistory[target].pings = gHistory[target].pings.slice(-PING_LIMIT);
 
@@ -457,28 +480,39 @@
         gHistory[target].p99.push([now, payload.recent.stats.p99]);
 
         if (target === gSelected) {
-          el.response.innerText = JSON.stringify(payload.last);
-
-          el.recent.sent.innerText = payload.recent.sent;
-          el.recent.lost.innerText = payload.recent.lost;
-          el.recent.loss.innerText = (payload.recent.lost / payload.recent.sent * 100).toFixed(1) + '%';
-
-          el.recent.ping.p50.innerText = payload.recent.stats.mdn;
-          el.recent.ping.p90.innerText = payload.recent.stats.p90;
-          el.recent.ping.p99.innerText = payload.recent.stats.p99;
-
-          el.overall.sent.innerText = payload.overall.sent;
-          el.overall.lost.innerText = payload.overall.lost;
-          el.overall.loss.innerText = (payload.overall.lost / payload.overall.sent * 100).toFixed(1) + '%';
-
-          el.overall.ping.p50.innerText = payload.overall.stats.mdn;
-          el.overall.ping.p90.innerText = payload.overall.stats.p90;
-          el.overall.ping.p99.innerText = payload.overall.stats.p99;
-
+          updateStatistics(payload);
           updateRealtimeChart(gHistory[target].pings);
           updatePeriodCharts(gHistory[target].loss, gHistory[target].mdn, gHistory[target].p90, gHistory[target].p99);
         }
       }
+    }
+
+    function formatJSON(data) {
+      return JSON.stringify(data).replaceAll(',', ', ');
+    }
+
+    function updateStatistics(payload) {
+      if (!payload) return;
+
+      el.response.innerText = formatJSON(payload.last);
+
+      el.recent.errors.innerText = formatJSON(payload.recent.errors);
+      el.recent.sent.innerText = payload.recent.sent;
+      el.recent.lost.innerText = payload.recent.lost;
+      el.recent.loss.innerText = (payload.recent.lost / payload.recent.sent * 100).toFixed(1) + '%';
+
+      el.recent.ping.p50.innerText = payload.recent.stats.mdn;
+      el.recent.ping.p90.innerText = payload.recent.stats.p90;
+      el.recent.ping.p99.innerText = payload.recent.stats.p99;
+
+      el.overall.errors.innerText = formatJSON(payload.overall.errors);
+      el.overall.sent.innerText = payload.overall.sent;
+      el.overall.lost.innerText = payload.overall.lost;
+      el.overall.loss.innerText = (payload.overall.lost / payload.overall.sent * 100).toFixed(1) + '%';
+
+      el.overall.ping.p50.innerText = payload.overall.stats.mdn;
+      el.overall.ping.p90.innerText = payload.overall.stats.p90;
+      el.overall.ping.p99.innerText = payload.overall.stats.p99;
     }
 
     function onPeriod(payload) {

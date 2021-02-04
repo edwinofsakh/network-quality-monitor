@@ -135,7 +135,8 @@ function onPeriod(target, monitor) {
         stats: {
             sent: monitor.recent.sent,
             lost: monitor.recent.lost,
-            ping: monitor.recent.stats
+            ping: monitor.recent.stats,
+            errors: monitor.recent.errors
         }
     };
 
