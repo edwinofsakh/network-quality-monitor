@@ -5,20 +5,41 @@ const { DelayStatistics } = require('./statistics');
 const SUCCESS = 'Success';
 
 /**
- * GeneralMonitor class
+ * @callback taskCallback
+ * @param {Error} err - error
+ * @param {Date} start - start time
+ * @param {Date} end - end time
+ */
+
+/**
+ * @callback taskFunction
+ * @param {taskCallback} cb - callback
+ */
+
+/**
+ * The options of monitor.
+ * @typedef {object} MonitorOptions
+ * @property {number} threshold - Maximum task execution time in milliseconds.
+ * @property {number} timeout - Maximum task execution time in milliseconds.
+ * @property {number} interval - Interval between tests in milliseconds.
+ * @property {number} period - Period to aggregate statistics in minutes.
+ */
+
+/**
+ * This class helps you keep track of the execution time of task.
  * 
  * Events: start, stop, error, update, period
  */
 class GeneralMonitor extends EventEmitter {
     /**
      * 
-     * @param {object} options - monitor options
+     * @param {MonitorOptions} options - monitor options
      */
     constructor(options) {
         super();
 
         // monitor options
-        this._options = Object.assign({timeout: 2000, interval: 2000, period: 15}, options || {});
+        this._options = Object.assign({threshold: 500, timeout: 2000, interval: 2000, period: 15}, options || {});
 
         // overall statistics
         this._overall = {
@@ -51,10 +72,6 @@ class GeneralMonitor extends EventEmitter {
         this._taskInterval = null;
     }
 
-    get prefix() {
-        return 'monitor';
-    }
-
     get last() {
         return this._last;
     }
@@ -73,13 +90,15 @@ class GeneralMonitor extends EventEmitter {
 
     /**
      * Starts monitoring.
+     * 
+     * @param {taskFunction} task - task to execute
      */
-    start(cb) {
+    start(task) {
         if (!this._running) {
             this._running = true;
             this.emit('start');
-            this._executeTask(cb);
-            this._taskInterval = setInterval(() => this._executeTask(cb), this._options.interval);
+            this._execute(task);
+            this._taskInterval = setInterval(() => this._execute(task), this._options.interval);
         } else {
             this.emit('error', new Error('Monitor is already started'));
         }
@@ -103,10 +122,11 @@ class GeneralMonitor extends EventEmitter {
 
     /**
      * Executes task.
+     * @param {taskFunction} task - task callback
      */
-    _executeTask(cb) {
+    _execute(task) {
         this._executing = true;
-        cb((error, start, end) => {
+        task((error, start, end) => {
             this._executing = false;
             const time = end - start;
             let status = error ? error.constructor.name : 'Success';
@@ -116,24 +136,24 @@ class GeneralMonitor extends EventEmitter {
                 status = 'UnexpectedError';
             }
 
-            this._updateStatistics(start.getTime(), time, status, message);
+            this._updateStatistics(start, time, status, message);
         });
     }
 
     /**
      * Updates ping statistics.
-     * @param {string} sent - request sent date
-     * @param {number} ping - response delay in milliseconds
+     * @param {Date} start - request sent date
+     * @param {number} time - execution time in milliseconds
      * @param {string} status - response status
      * @param {string} message - response message
      */
-    _updateStatistics(sent, ping, status, message) {
+    _updateStatistics(start, time, status, message) {
         // Update overall statistics
         this._overall.sent++;
 
         if (status === SUCCESS) {
             this._overall.received++;
-            this._overall.stats.update(ping);
+            this._overall.stats.update(time);
         } else {
             this._overall.lost++;
             this._overall.errors[status] = (this._overall.errors[status] || 0) + 1;
@@ -141,9 +161,9 @@ class GeneralMonitor extends EventEmitter {
 
         // Update recent statistics
         const now = Date.now();
-        this._last = [sent, ping, status, message];
+        this._last = {start, time, status, message};
         this._buffer.push(this._last);
-        this._buffer = this._buffer.filter(item => item[0] >= (now - this._options.period * 60000));
+        this._buffer = this._buffer.filter(item => item.start >= (now - this._options.period * 60000));
 
         let delays = [];
         this._recent.sent = 0;
@@ -153,12 +173,12 @@ class GeneralMonitor extends EventEmitter {
 
         this._buffer.forEach(item => {
             this._recent.sent++;
-            if (item[2] === SUCCESS) {
+            if (item.status === SUCCESS) {
                 this._recent.received++;
-                delays.push(item[1]);
+                delays.push(item.time);
             } else {
                 this._recent.lost++;
-                this._recent.errors[item[2]] = (this._recent.errors[item[2]] || 0) + 1;
+                this._recent.errors[item.status] = (this._recent.errors[item.status] || 0) + 1;
             }
         });
 

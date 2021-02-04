@@ -15,6 +15,12 @@ $ node ping-monitor-cli.js --help
 $ node http-monitor-cli.js --help
 ```
 
+## TODO
+
+ - [X] Web interface
+ - [X] Ability to ping multiple targets
+ - [X] Ability to store history on server
+
 ## History
 
 **0.2.0**
