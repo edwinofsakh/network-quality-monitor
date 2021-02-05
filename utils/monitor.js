@@ -187,9 +187,10 @@ class GeneralMonitor extends EventEmitter {
         this.emit('update');
 
         // Update period statistics
-        if (now > this._period * this._options.period * 60000) {
+        const next = this._period * this._options.period * 60000;
+        if (now > next) {
             this._period++;
-            this.emit('period');
+            this.emit('period', next);
         }
     }
 }

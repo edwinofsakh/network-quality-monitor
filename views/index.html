@@ -53,22 +53,22 @@
             <span class="fw-bold">Settings:</span> <span data-jsref="settings">N/A</span>
           </div>
         </div>
-        <div class="p-1 col-sm-12">
+        <div class="p-1 col-sm-6">
           <select data-jsref="target" class="form-select" aria-label="Target" disabled>
             <option selected disabled>Select target</option>
           </select>
         </div>
-        <div class="p-1 col-sm-12">
+        <div class="p-1 col-sm-6">
           <div class="p-2 border rounded-2">
             <span class="fw-bold">Response:</span> <span data-jsref="response">N/A</span>
           </div>
         </div>
-        <div class="p-1 col-sm-12">
+        <div class="p-1 col-sm-6">
           <div class="p-2 border rounded-2">
             <span class="fw-bold">Recent:</span> <span data-jsref="recent-errors">N/A</span>
           </div>
         </div>
-        <div class="p-1 col-sm-12">
+        <div class="p-1 col-sm-6">
           <div class="p-2 border rounded-2">
             <span class="fw-bold">Overall:</span> <span data-jsref="overall-errors">N/A</span>
           </div>
@@ -86,7 +86,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td class="ps-2 small">Last 15 mins</td>
+                  <td data-jsref="recent-label" class="ps-2 small">Recent</td>
                   <td data-jsref="recent-ping-p50" class="text-end">0</td>
                   <td data-jsref="recent-ping-p90" class="text-end">0</td>
                   <td data-jsref="recent-ping-p99" class="pe-2 text-end">0</td>
@@ -114,7 +114,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td class="ps-2 small">Last 15 mins</td>
+                  <td data-jsref="recent-label" class="ps-2 small">Recent</td>
                   <td data-jsref="recent-sent" class="text-end">0</td>
                   <td data-jsref="recent-lost" class="text-end">0</td>
                   <td data-jsref="recent-loss" class="pe-2 text-end">0.0%</td>
@@ -153,8 +153,8 @@
     integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
     crossorigin="anonymous"></script>
   <script>
-    const HISTORY_LIMIT = 50;
-    const PING_LIMIT = 20;
+    let HISTORY_LIMIT = 50;
+    let PING_LIMIT = 50;
 
     let ws;
     let gSettings;
@@ -170,6 +170,7 @@
       host: document.querySelector('[data-jsref="host"]'),
       target: document.querySelector('[data-jsref="target"]'),
       recent: {
+        labels: document.querySelectorAll('[data-jsref="recent-label"]'),
         errors: document.querySelector('[data-jsref="recent-errors"]'),
         sent: document.querySelector('[data-jsref="recent-sent"]'),
         lost: document.querySelector('[data-jsref="recent-lost"]'),
@@ -318,6 +319,9 @@
           plot: {
             decimals: 0,
             aspect: 'stepped',
+            marker: {
+              visible: false
+            }
           },
           plotarea: {
             margin: 'dynamic'
@@ -355,6 +359,9 @@
           plot: {
             decimals: 1,
             aspect: 'stepped',
+            marker: {
+              visible: false
+            }
           },
           tooltip: {
             text: '%v% at %kl'
@@ -402,6 +409,9 @@
           plot: {
             decimals: 1,
             aspect: 'stepped',
+            marker: {
+              visible: false
+            }
           },
           tooltip: {
             text: '%vms at %kl'
@@ -459,6 +469,12 @@
 
       el.target.value = gSelected;
       el.target.disabled = false;
+      el.recent.labels.forEach(label => {
+        label.innerText = 'Last ' + getNumberText(gSettings.period, 'min', 'mins');
+      });
+
+      HISTORY_LIMIT = 24 * 60 / gSettings.period;
+      PING_LIMIT = 50;
     }
 
     function onUpdate(payload) {
@@ -494,7 +510,7 @@
     function updateStatistics(payload) {
       if (!payload) return;
 
-      el.response.innerText = formatJSON(payload.last);
+      el.response.innerText = formatJSON(payload.last.status);
 
       el.recent.errors.innerText = formatJSON(payload.recent.errors);
       el.recent.sent.innerText = payload.recent.sent;
@@ -559,10 +575,10 @@
       };
 
       items.forEach(item => {
-        gHistory[target].loss.push([align(item.date, p), item.stats.lost / item.stats.sent * 100]);
-        gHistory[target].mdn.push([align(item.date, p), item.stats.ping.mdn]);
-        gHistory[target].p90.push([align(item.date, p), item.stats.ping.p90]);
-        gHistory[target].p99.push([align(item.date, p), item.stats.ping.p99]);
+        gHistory[target].loss.push([align(item.date, p), item.stats ? (item.stats.lost / item.stats.sent * 100) : null]);
+        gHistory[target].mdn.push([align(item.date, p), item.stats ? item.stats.ping.mdn : null]);
+        gHistory[target].p90.push([align(item.date, p), item.stats ? item.stats.ping.p90 : null]);
+        gHistory[target].p99.push([align(item.date, p), item.stats ? item.stats.ping.p99 : null]);
       });
 
       addLastPoint(target);
@@ -594,6 +610,16 @@
 
     function align(time, period) {
       return Math.round(time / period) * period;
+    }
+
+    function getNumberText(number, singular, plural) {
+      if (number <= 0) {
+        return `no ${plural}`;
+      } if (number === 1) {
+        return `1 ${singular}`;
+      } else {
+        return `${number} ${plural}`;
+      }
     }
   </script>
 </body>
