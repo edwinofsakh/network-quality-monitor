@@ -17,11 +17,15 @@ $ node http-monitor-cli.js --help
 
 ## TODO
 
- - [X] Web interface
- - [X] Ability to ping multiple targets
- - [X] Ability to store history on server
+ - [ ] Support config file
 
 ## History
+
+**0.3.0**
+
+ - Add web interface
+ - Add ability to ping multiple targets
+ - Add ability to store history on server
 
 **0.2.0**
 
@@ -36,7 +40,7 @@ $ node http-monitor-cli.js --help
 ```
 MIT License
 
-Copyright (c) 2020 Sergey Panpurin
+Copyright (c) 2021 Sergey Panpurin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

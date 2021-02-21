@@ -25,7 +25,7 @@
   <header>
     <nav class="mb-1 navbar navbar-dark bg-dark">
       <div class="container">
-        <span class="navbar-brand mb-0 h1">Ping Monitor v0.2.0</span>
+        <span class="navbar-brand mb-0 h1">Ping Monitor v0.3.0</span>
       </div>
     </nav>
   </header>
@@ -38,7 +38,7 @@
             <option disabled>Select server</option>
           </select>
         </div>
-        <div class="p-1 col-sm-6">
+        <div class="p-1 col-sm-6 col-lg-3">
           <button data-jsref="add" type="button" class="btn btn-outline-secondary">
             Add Server
           </button>
@@ -46,7 +46,14 @@
             Connect
           </button>
         </div>
-        <div class="p-1 col-sm-12">
+        <div class="p-1 col-sm-6 col-lg-3">
+          <select data-jsref="hours" class="form-select" aria-label="Hours">
+            <option value="24" selected>24 hours</option>
+            <option value="12">12 hours</option>
+            <option value="6">6 hours</option>
+          </select>
+        </div>
+        <div class="p-1 col-12">
           <div class="p-2 border rounded-2">
             <span class="fw-bold">Settings:</span> <span data-jsref="settings">N/A</span>
           </div>
@@ -61,12 +68,12 @@
             <span class="fw-bold">Response:</span> <span data-jsref="response">N/A</span>
           </div>
         </div>
-        <div class="p-1 col-sm-6">
+        <div class="p-1 col-lg-6">
           <div class="p-2 border rounded-2">
             <span class="fw-bold">Recent Errors:</span> <span data-jsref="recent-errors">N/A</span>
           </div>
         </div>
-        <div class="p-1 col-sm-6">
+        <div class="p-1 col-lg-6">
           <div class="p-2 border rounded-2">
             <span class="fw-bold">Overall Errors:</span> <span data-jsref="overall-errors">N/A</span>
           </div>
@@ -158,6 +165,7 @@
     let gSettings;
     let gHistory;
     let gSelected;
+    let gHours = 24;
 
     // Find elements
     const el = {
@@ -167,6 +175,7 @@
       add: document.querySelector('[data-jsref="add"]'),
       host: document.querySelector('[data-jsref="host"]'),
       target: document.querySelector('[data-jsref="target"]'),
+      hours: document.querySelector('[data-jsref="hours"]'),
       recent: {
         labels: document.querySelectorAll('[data-jsref="recent-label"]'),
         errors: document.querySelector('[data-jsref="recent-errors"]'),
@@ -196,6 +205,7 @@
     el.connect.onclick = onConnect;
     el.add.onclick = onAdd;
     el.target.onchange = onTargetChange;
+    el.hours.onchange = onHoursChange;
 
     addHostOption();
 
@@ -231,6 +241,11 @@
       updateStatistics(gHistory[gSelected].update);
       updateRealtimeChart(gHistory[gSelected].pings);
       updatePeriodCharts(gHistory[gSelected].loss, gHistory[gSelected].mdn, gHistory[gSelected].p90, gHistory[gSelected].p99);
+    }
+
+    function onHoursChange() {
+      gHours = parseInt(this.value);
+      console.log(gHours);
     }
 
     function reset() {
@@ -485,7 +500,7 @@
         label.innerText = 'Last ' + getNumberText(gSettings.period, 'min', 'mins');
       });
 
-      HISTORY_LIMIT = 24 * 60 / gSettings.period;
+      HISTORY_LIMIT = gHours * 60 / gSettings.period;
       PING_LIMIT = 60 * 1000 / gSettings.interval;
     }
 
