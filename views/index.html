@@ -5,14 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>PingMonitor</title>
+  <title>Ping Monitor</title>
   <meta name="description" content="Web interface for PingMonitor">
   <meta name="author" content="Sergey Panpurin">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
   <style>
     .bi::before {
       width: 1em;
@@ -26,7 +25,7 @@
   <header>
     <nav class="mb-1 navbar navbar-dark bg-dark">
       <div class="container">
-        <span class="navbar-brand mb-0 h1">Ping Monitor</span>
+        <span class="navbar-brand mb-0 h1">Ping Monitor v0.2.0</span>
       </div>
     </nav>
   </header>
@@ -37,12 +36,11 @@
         <div class="p-1 col-sm-6">
           <select data-jsref="host" class="form-select" aria-label="Server">
             <option disabled>Select server</option>
-            <option selected value="localhost:4250">Local Host (localhost:4250)</option>
           </select>
         </div>
         <div class="p-1 col-sm-6">
           <button data-jsref="add" type="button" class="btn btn-outline-secondary">
-            <i class="bi bi-plus"></i> Add Server
+            Add Server
           </button>
           <button data-jsref="connect" type="button" class="btn btn-primary">
             Connect
@@ -65,12 +63,12 @@
         </div>
         <div class="p-1 col-sm-6">
           <div class="p-2 border rounded-2">
-            <span class="fw-bold">Recent:</span> <span data-jsref="recent-errors">N/A</span>
+            <span class="fw-bold">Recent Errors:</span> <span data-jsref="recent-errors">N/A</span>
           </div>
         </div>
         <div class="p-1 col-sm-6">
           <div class="p-2 border rounded-2">
-            <span class="fw-bold">Overall:</span> <span data-jsref="overall-errors">N/A</span>
+            <span class="fw-bold">Overall Errors:</span> <span data-jsref="overall-errors">N/A</span>
           </div>
         </div>
         <div class="p-1 col-sm-6">
@@ -153,8 +151,8 @@
     integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
     crossorigin="anonymous"></script>
   <script>
-    let HISTORY_LIMIT = 50;
-    let PING_LIMIT = 50;
+    let HISTORY_LIMIT;
+    let PING_LIMIT;
 
     let ws;
     let gSettings;
@@ -199,9 +197,18 @@
     el.add.onclick = onAdd;
     el.target.onchange = onTargetChange;
 
+    addHostOption();
+
     buildCharts();
 
     reset();
+
+    function addHostOption() {
+      const option = document.createElement("option");
+        option.value = window.location.host;
+        option.text = 'Current Server (' + window.location.host + ')';
+        el.host.add(option);
+    }
 
     function onConnect() {
       if (el.host.value === 'Select server') {
@@ -258,27 +265,29 @@
         ws = new WebSocket('ws://' + host + '/websocket/');
 
         ws.onerror = function (event) {
-          el.response.innerText = 'Connection Error';
           console.error(event);
+          el.response.innerText = 'Connection Error';
         };
 
         ws.onopen = function () {
+          console.log('Connection opened');
           el.response.innerText = 'Connection opened';
           ws.send(JSON.stringify({ type: "open", payload: null }));
         };
 
         ws.onclose = function (event) {
+          console.log('Connection closed');
           el.response.innerText = 'Connection closed';
-          console.log(event);
+          // console.log(event);
         };
 
         ws.onmessage = function (event) {
           try {
             const msg = JSON.parse(event.data);
-            console.log(msg);
+            // console.log(msg);
 
             if (msg.type === undefined || msg.payload === undefined) {
-              console.log('Invalid message');
+              console.log('Invalid message:', msg);
             } else {
               switch (msg.type) {
                 case 'ping-settings':
@@ -312,7 +321,7 @@
         data: {
           type: "area",
           title: {
-            text: 'Realtime Latency',
+            text: 'Realtime Latency (last minute)',
             adjustLayout: true,
             fontSize: 14,
           },
@@ -322,6 +331,9 @@
             marker: {
               visible: false
             }
+          },
+          tooltip: {
+            text: '%vms'
           },
           plotarea: {
             margin: 'dynamic'
@@ -349,7 +361,7 @@
         data: {
           type: "area",
           title: {
-            text: 'Packets Statistics',
+            text: 'Packet Loss History',
             adjustLayout: true,
             fontSize: 14,
           },
@@ -399,7 +411,7 @@
         data: {
           type: "area",
           title: {
-            text: 'Latency Statistics',
+            text: 'Latency History',
             adjustLayout: true,
             fontSize: 14,
           },
@@ -474,7 +486,7 @@
       });
 
       HISTORY_LIMIT = 24 * 60 / gSettings.period;
-      PING_LIMIT = 50;
+      PING_LIMIT = 60 * 1000 / gSettings.interval;
     }
 
     function onUpdate(payload) {
