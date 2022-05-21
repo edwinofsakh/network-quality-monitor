@@ -24,11 +24,13 @@ $ npm i -g network-quality-monitor
 ### Ping Monitor
 
 Local version
+
 ```bash
 $ node ping-monitor-cli.js --help
 ```
 
 Global version
+
 ```bash
 $ ping-monitor --help
 ```
@@ -87,11 +89,13 @@ Realtime Chart
 ### Http Monitor
 
 Local version
+
 ```bash
 $ node http-monitor-cli.js --help
 ```
 
 Global version
+
 ```bash
 $ http-monitor --help
 ```
@@ -101,6 +105,7 @@ $ http-monitor --help
 It use env variable `PORT`. Default value it `4250`.
 
 Local version
+
 ```bash
 $ node ping-monitor-server.js 192.168.1.1 1.1.1.1
 ```

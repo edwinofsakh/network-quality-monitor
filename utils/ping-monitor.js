@@ -3,83 +3,83 @@ const { GeneralMonitor } = require('./monitor');
 
 /**
  * PingMonitor class
- * 
+ *
  * Events: start, stop, error, close, update, period
  */
 class PingMonitor extends GeneralMonitor {
-    /**
-     * Creates ping monitor
-     * @param {string} target - target ip address
-     * @param {object} options - monitor options
-     */
-    constructor(target, options) {
-        super(options);
+  /**
+   * Creates ping monitor
+   * @param {string} target - target ip address
+   * @param {object} options - monitor options
+   */
+  constructor(target, options) {
+    super(options);
 
-        // target ip address
-        this._target = target || '1.1.1.1';
+    // target ip address
+    this._target = target || '1.1.1.1';
 
-        // session instance
+    // session instance
+    this._session = null;
+
+    this.on('start', () => {
+      this._session = this._createSession();
+    });
+
+    this.on('stop', () => {
+      if (this._session) {
+        this._session.close();
         this._session = null;
+      }
+    });
+  }
 
-        this.on('start', () => {
-            this._session = this._createSession();
-        });
+  get prefix() {
+    return 'ping-monitor';
+  }
 
-        this.on('stop', () => {
-            if (this._session) {
-                this._session.close();
-                this._session = null;
-            }
-        });
-    }
+  get target() {
+    return this._target;
+  }
 
-    get prefix() {
-        return 'ping-monitor';
-    }
+  /**
+   * Starts ping monitor
+   */
+  start() {
+    super.start((cb) => this._ping(cb));
+  }
 
-    get target() {
-        return this._target;
-    }
+  /**
+   * Pings target ip address
+   */
+  _ping(cb) {
+    this._session.pingHost(this._target, (error, _target, sent, received) => cb(error, sent, received));
+  }
 
-    /**
-     * Starts ping monitor
-     */
-    start() {
-        super.start(cb => this._ping(cb));
-    }
+  /**
+   * Creates session instance
+   */
+  _createSession() {
+    const options = {
+      networkProtocol: ping.NetworkProtocol.IPv4,
+      packetSize: 32,
+      retries: 0,
+      timeout: this._options.timeout,
+      ttl: 128,
+    };
 
-    /**
-     * Pings target ip address
-     */
-    _ping(cb) {
-        this._session.pingHost(this._target, (error, _target, sent, received) => cb(error, sent, received));
-    }
+    const session = ping.createSession(options);
 
-    /**
-     * Creates session instance
-     */
-    _createSession() {
-        const options = {
-            networkProtocol: ping.NetworkProtocol.IPv4,
-            packetSize: 32,
-            retries: 0,
-            timeout: this._options.timeout,
-            ttl: 128,
-        };
+    session.on('error', (error) => {
+      this.emit('error', error || new Error('Unknown socket error'));
+      this._session.close();
+    });
 
-        const session = ping.createSession(options);
+    session.on('close', () => {
+      this.emit('close');
+    });
 
-        session.on('error', (error) => {
-            this.emit('error', error || new Error('Unknown socket error'));
-            this._session.close();
-        });
-
-        session.on('close', () => {
-            this.emit('close');
-        });
-
-        return session;
-    }
+    return session;
+  }
 }
 
 module.exports.PingMonitor = PingMonitor;

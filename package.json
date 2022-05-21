@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node ping-monitor-cli.js",
     "test": "mocha",
+    "format": "npx prettier --write .",
     "publish": "npm publish"
   },
   "bin": {

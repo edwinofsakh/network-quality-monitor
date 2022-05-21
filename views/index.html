@@ -1,654 +1,668 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ping Monitor</title>
+    <meta name="description" content="Web interface for PingMonitor" />
+    <meta name="author" content="Sergey Panpurin" />
 
-  <title>Ping Monitor</title>
-  <meta name="description" content="Web interface for PingMonitor">
-  <meta name="author" content="Sergey Panpurin">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1"
+      crossorigin="anonymous"
+    />
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
-
-  <style>
-    .bi::before {
-      width: 1em;
-      height: 1em;
-      vertical-align: -.1em;
-    }
-  </style>
-</head>
-
-<body>
-  <header>
-    <nav class="mb-1 navbar navbar-dark bg-dark">
-      <div class="container">
-        <span class="navbar-brand mb-0 h1">Ping Monitor v0.3.0</span>
-      </div>
-    </nav>
-  </header>
-
-  <main>
-    <div class="container">
-      <div class="row">
-        <div class="p-1 col-sm-6">
-          <select data-jsref="host" class="form-select" aria-label="Server">
-            <option disabled>Select server</option>
-          </select>
-        </div>
-        <div class="p-1 col-sm-6 col-lg-3">
-          <button data-jsref="add" type="button" class="btn btn-outline-secondary">
-            Add Server
-          </button>
-          <button data-jsref="connect" type="button" class="btn btn-primary">
-            Connect
-          </button>
-        </div>
-        <div class="p-1 col-sm-6 col-lg-3">
-          <select data-jsref="hours" class="form-select" aria-label="Hours">
-            <option value="24" selected>24 hours</option>
-            <option value="12">12 hours</option>
-            <option value="6">6 hours</option>
-          </select>
-        </div>
-        <div class="p-1 col-12">
-          <div class="p-2 border rounded-2">
-            <span class="fw-bold">Settings:</span> <span data-jsref="settings">N/A</span>
-          </div>
-        </div>
-        <div class="p-1 col-sm-6">
-          <select data-jsref="target" class="form-select" aria-label="Target" disabled>
-            <option selected disabled>Select target</option>
-          </select>
-        </div>
-        <div class="p-1 col-sm-6">
-          <div class="p-2 border rounded-2">
-            <span class="fw-bold">Response:</span> <span data-jsref="response">N/A</span>
-          </div>
-        </div>
-        <div class="p-1 col-lg-6">
-          <div class="p-2 border rounded-2">
-            <span class="fw-bold">Recent Errors:</span> <span data-jsref="recent-errors">N/A</span>
-          </div>
-        </div>
-        <div class="p-1 col-lg-6">
-          <div class="p-2 border rounded-2">
-            <span class="fw-bold">Overall Errors:</span> <span data-jsref="overall-errors">N/A</span>
-          </div>
-        </div>
-        <div class="p-1 col-sm-6">
-          <div class="border rounded-2">
-            <table class="m-0 table table-sm table-striped">
-              <thead>
-                <tr>
-                  <td class="ps-2 fw-bold">Latency</td>
-                  <td class="text-end small">50%</td>
-                  <td class="text-end small">90%</td>
-                  <td class="pe-2 text-end small">99%</td>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td data-jsref="recent-label" class="ps-2 small">Recent</td>
-                  <td data-jsref="recent-ping-p50" class="text-end">0</td>
-                  <td data-jsref="recent-ping-p90" class="text-end">0</td>
-                  <td data-jsref="recent-ping-p99" class="pe-2 text-end">0</td>
-                </tr>
-                <tr>
-                  <td class="ps-2 small border-bottom-0">Overall</td>
-                  <td data-jsref="overall-ping-p50" class="text-end border-bottom-0">0</td>
-                  <td data-jsref="overall-ping-p90" class="text-end border-bottom-0">0</td>
-                  <td data-jsref="overall-ping-p99" class="pe-2 text-end border-bottom-0">0</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="p-1 col-sm-6">
-          <div class="border rounded-2">
-            <table class="m-0 table table-sm table-striped">
-              <thead>
-                <tr>
-                  <td class="ps-2 fw-bold">Packets</td>
-                  <td class="text-end small">Sent</td>
-                  <td class="text-end small">Lost</td>
-                  <td class="pe-2 text-end small">% loss</td>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td data-jsref="recent-label" class="ps-2 small">Recent</td>
-                  <td data-jsref="recent-sent" class="text-end">0</td>
-                  <td data-jsref="recent-lost" class="text-end">0</td>
-                  <td data-jsref="recent-loss" class="pe-2 text-end">0.0%</td>
-                </tr>
-                <tr>
-                  <td class="ps-2 small border-bottom-0">Overall</td>
-                  <td data-jsref="overall-sent" class="text-end border-bottom-0">0</td>
-                  <td data-jsref="overall-lost" class="text-end border-bottom-0">0</td>
-                  <td data-jsref="overall-loss" class="pe-2 text-end border-bottom-0">0.0%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="container">
-      <div class="row">
-        <div class="p-1 col-12">
-          <div id='RealtimeChart' class="border rounded-2" style="min-height: 182px;"></div>
-        </div>
-        <div class="p-1 col-12">
-          <div id='PacketsChart' class="border rounded-2" style="min-height: 182px;"></div>
-        </div>
-        <div class="p-1 col-12">
-          <div id='LatencyChart' class="border rounded-2" style="min-height: 182px;"></div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <script src="https://cdn.zingchart.com/zingchart.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
-    crossorigin="anonymous"></script>
-  <script>
-    let HISTORY_LIMIT;
-    let PING_LIMIT;
-
-    let ws;
-    let gSettings;
-    let gHistory;
-    let gSelected;
-    let gHours = 24;
-
-    // Find elements
-    const el = {
-      settings: document.querySelector('[data-jsref="settings"]'),
-      response: document.querySelector('[data-jsref="response"]'),
-      connect: document.querySelector('[data-jsref="connect"]'),
-      add: document.querySelector('[data-jsref="add"]'),
-      host: document.querySelector('[data-jsref="host"]'),
-      target: document.querySelector('[data-jsref="target"]'),
-      hours: document.querySelector('[data-jsref="hours"]'),
-      recent: {
-        labels: document.querySelectorAll('[data-jsref="recent-label"]'),
-        errors: document.querySelector('[data-jsref="recent-errors"]'),
-        sent: document.querySelector('[data-jsref="recent-sent"]'),
-        lost: document.querySelector('[data-jsref="recent-lost"]'),
-        loss: document.querySelector('[data-jsref="recent-loss"]'),
-        ping: {
-          p50: document.querySelector('[data-jsref="recent-ping-p50"]'),
-          p90: document.querySelector('[data-jsref="recent-ping-p90"]'),
-          p99: document.querySelector('[data-jsref="recent-ping-p99"]')
-        }
-      },
-      overall: {
-        errors: document.querySelector('[data-jsref="overall-errors"]'),
-        sent: document.querySelector('[data-jsref="overall-sent"]'),
-        lost: document.querySelector('[data-jsref="overall-lost"]'),
-        loss: document.querySelector('[data-jsref="overall-loss"]'),
-        ping: {
-          p50: document.querySelector('[data-jsref="overall-ping-p50"]'),
-          p90: document.querySelector('[data-jsref="overall-ping-p90"]'),
-          p99: document.querySelector('[data-jsref="overall-ping-p99"]')
-        }
+    <style>
+      .bi::before {
+        width: 1em;
+        height: 1em;
+        vertical-align: -0.1em;
       }
-    }
+    </style>
+  </head>
 
-    // Connect actions
-    el.connect.onclick = onConnect;
-    el.add.onclick = onAdd;
-    el.target.onchange = onTargetChange;
-    el.hours.onchange = onHoursChange;
+  <body>
+    <header>
+      <nav class="mb-1 navbar navbar-dark bg-dark">
+        <div class="container">
+          <span class="navbar-brand mb-0 h1">Ping Monitor v0.3.0</span>
+        </div>
+      </nav>
+    </header>
 
-    addHostOption();
+    <main>
+      <div class="container">
+        <div class="row">
+          <div class="p-1 col-sm-6">
+            <select data-jsref="host" class="form-select" aria-label="Server">
+              <option disabled>Select server</option>
+            </select>
+          </div>
+          <div class="p-1 col-sm-6 col-lg-3">
+            <button data-jsref="add" type="button" class="btn btn-outline-secondary">Add Server</button>
+            <button data-jsref="connect" type="button" class="btn btn-primary">Connect</button>
+          </div>
+          <div class="p-1 col-sm-6 col-lg-3">
+            <select data-jsref="hours" class="form-select" aria-label="Hours">
+              <option value="24" selected>24 hours</option>
+              <option value="12">12 hours</option>
+              <option value="6">6 hours</option>
+            </select>
+          </div>
+          <div class="p-1 col-12">
+            <div class="p-2 border rounded-2">
+              <span class="fw-bold">Settings:</span>
+              <span data-jsref="settings">N/A</span>
+            </div>
+          </div>
+          <div class="p-1 col-sm-6">
+            <select data-jsref="target" class="form-select" aria-label="Target" disabled>
+              <option selected disabled>Select target</option>
+            </select>
+          </div>
+          <div class="p-1 col-sm-6">
+            <div class="p-2 border rounded-2">
+              <span class="fw-bold">Response:</span>
+              <span data-jsref="response">N/A</span>
+            </div>
+          </div>
+          <div class="p-1 col-lg-6">
+            <div class="p-2 border rounded-2">
+              <span class="fw-bold">Recent Errors:</span>
+              <span data-jsref="recent-errors">N/A</span>
+            </div>
+          </div>
+          <div class="p-1 col-lg-6">
+            <div class="p-2 border rounded-2">
+              <span class="fw-bold">Overall Errors:</span>
+              <span data-jsref="overall-errors">N/A</span>
+            </div>
+          </div>
+          <div class="p-1 col-sm-6">
+            <div class="border rounded-2">
+              <table class="m-0 table table-sm table-striped">
+                <thead>
+                  <tr>
+                    <td class="ps-2 fw-bold">Latency</td>
+                    <td class="text-end small">50%</td>
+                    <td class="text-end small">90%</td>
+                    <td class="pe-2 text-end small">99%</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-jsref="recent-label" class="ps-2 small">Recent</td>
+                    <td data-jsref="recent-ping-p50" class="text-end">0</td>
+                    <td data-jsref="recent-ping-p90" class="text-end">0</td>
+                    <td data-jsref="recent-ping-p99" class="pe-2 text-end">0</td>
+                  </tr>
+                  <tr>
+                    <td class="ps-2 small border-bottom-0">Overall</td>
+                    <td data-jsref="overall-ping-p50" class="text-end border-bottom-0">0</td>
+                    <td data-jsref="overall-ping-p90" class="text-end border-bottom-0">0</td>
+                    <td data-jsref="overall-ping-p99" class="pe-2 text-end border-bottom-0">0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="p-1 col-sm-6">
+            <div class="border rounded-2">
+              <table class="m-0 table table-sm table-striped">
+                <thead>
+                  <tr>
+                    <td class="ps-2 fw-bold">Packets</td>
+                    <td class="text-end small">Sent</td>
+                    <td class="text-end small">Lost</td>
+                    <td class="pe-2 text-end small">% loss</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-jsref="recent-label" class="ps-2 small">Recent</td>
+                    <td data-jsref="recent-sent" class="text-end">0</td>
+                    <td data-jsref="recent-lost" class="text-end">0</td>
+                    <td data-jsref="recent-loss" class="pe-2 text-end">0.0%</td>
+                  </tr>
+                  <tr>
+                    <td class="ps-2 small border-bottom-0">Overall</td>
+                    <td data-jsref="overall-sent" class="text-end border-bottom-0">0</td>
+                    <td data-jsref="overall-lost" class="text-end border-bottom-0">0</td>
+                    <td data-jsref="overall-loss" class="pe-2 text-end border-bottom-0">0.0%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    buildCharts();
+      <div class="container">
+        <div class="row">
+          <div class="p-1 col-12">
+            <div id="RealtimeChart" class="border rounded-2" style="min-height: 182px"></div>
+          </div>
+          <div class="p-1 col-12">
+            <div id="PacketsChart" class="border rounded-2" style="min-height: 182px"></div>
+          </div>
+          <div class="p-1 col-12">
+            <div id="LatencyChart" class="border rounded-2" style="min-height: 182px"></div>
+          </div>
+        </div>
+      </div>
+    </main>
 
-    reset();
+    <script src="https://cdn.zingchart.com/zingchart.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      let HISTORY_LIMIT;
+      let PING_LIMIT;
 
-    function addHostOption() {
-      const option = document.createElement("option");
+      let ws;
+      let gSettings;
+      let gHistory;
+      let gSelected;
+      let gHours = 24;
+
+      // Find elements
+      const el = {
+        settings: document.querySelector('[data-jsref="settings"]'),
+        response: document.querySelector('[data-jsref="response"]'),
+        connect: document.querySelector('[data-jsref="connect"]'),
+        add: document.querySelector('[data-jsref="add"]'),
+        host: document.querySelector('[data-jsref="host"]'),
+        target: document.querySelector('[data-jsref="target"]'),
+        hours: document.querySelector('[data-jsref="hours"]'),
+        recent: {
+          labels: document.querySelectorAll('[data-jsref="recent-label"]'),
+          errors: document.querySelector('[data-jsref="recent-errors"]'),
+          sent: document.querySelector('[data-jsref="recent-sent"]'),
+          lost: document.querySelector('[data-jsref="recent-lost"]'),
+          loss: document.querySelector('[data-jsref="recent-loss"]'),
+          ping: {
+            p50: document.querySelector('[data-jsref="recent-ping-p50"]'),
+            p90: document.querySelector('[data-jsref="recent-ping-p90"]'),
+            p99: document.querySelector('[data-jsref="recent-ping-p99"]'),
+          },
+        },
+        overall: {
+          errors: document.querySelector('[data-jsref="overall-errors"]'),
+          sent: document.querySelector('[data-jsref="overall-sent"]'),
+          lost: document.querySelector('[data-jsref="overall-lost"]'),
+          loss: document.querySelector('[data-jsref="overall-loss"]'),
+          ping: {
+            p50: document.querySelector('[data-jsref="overall-ping-p50"]'),
+            p90: document.querySelector('[data-jsref="overall-ping-p90"]'),
+            p99: document.querySelector('[data-jsref="overall-ping-p99"]'),
+          },
+        },
+      };
+
+      // Connect actions
+      el.connect.onclick = onConnect;
+      el.add.onclick = onAdd;
+      el.target.onchange = onTargetChange;
+      el.hours.onchange = onHoursChange;
+
+      addHostOption();
+
+      buildCharts();
+
+      reset();
+
+      function addHostOption() {
+        const option = document.createElement('option');
         option.value = window.location.host;
         option.text = 'Current Server (' + window.location.host + ')';
         el.host.add(option);
-    }
-
-    function onConnect() {
-      if (el.host.value === 'Select server') {
-        alert('Select server');
-      } else {
-        connect(el.host.value);
       }
 
-      this.blur();
-    }
+      function onConnect() {
+        if (el.host.value === 'Select server') {
+          alert('Select server');
+        } else {
+          connect(el.host.value);
+        }
 
-    function onAdd() {
-      alert('Not implemented');
-      this.blur();
-    }
-
-    function onTargetChange() {
-      gSelected = this.value;
-
-      updateStatistics(gHistory[gSelected].update);
-      updateRealtimeChart(gHistory[gSelected].pings);
-      updatePeriodCharts(gHistory[gSelected].loss, gHistory[gSelected].mdn, gHistory[gSelected].p90, gHistory[gSelected].p99);
-    }
-
-    function onHoursChange() {
-      gHours = parseInt(this.value);
-      console.log(gHours);
-    }
-
-    function reset() {
-      el.settings.innerText = 'N/A';
-      el.response.innerText = 'N/A';
-
-      gHistory = {};
-
-      updateRealtimeChart([]);
-      updatePeriodCharts([], [], [], []);
-
-      while (el.target.length > 1) {
-        el.target.remove(el.target.length - 1);
+        this.blur();
       }
-    }
 
-    function updateRealtimeChart(pings) {
-      zingchart.exec('RealtimeChart', 'setseriesvalues', { values: [pings] });
-    }
+      function onAdd() {
+        alert('Not implemented');
+        this.blur();
+      }
 
-    function updatePeriodCharts(loss, mdn, p90, p99) {
-      zingchart.exec('PacketsChart', 'setseriesvalues', { values: [loss] });
-      zingchart.exec('LatencyChart', 'setseriesvalues', { values: [p99, p90, mdn] });
-    }
+      function onTargetChange() {
+        gSelected = this.value;
 
-    function connect(host) {
-      try {
-        if (ws) ws.close();
+        updateStatistics(gHistory[gSelected].update);
+        updateRealtimeChart(gHistory[gSelected].pings);
+        updatePeriodCharts(
+          gHistory[gSelected].loss,
+          gHistory[gSelected].mdn,
+          gHistory[gSelected].p90,
+          gHistory[gSelected].p99
+        );
+      }
 
-        reset();
+      function onHoursChange() {
+        gHours = parseInt(this.value);
+        console.log(gHours);
+      }
 
-        ws = new WebSocket('ws://' + host + '/websocket/');
+      function reset() {
+        el.settings.innerText = 'N/A';
+        el.response.innerText = 'N/A';
 
-        ws.onerror = function (event) {
-          console.error(event);
-          el.response.innerText = 'Connection Error';
-        };
+        gHistory = {};
 
-        ws.onopen = function () {
-          console.log('Connection opened');
-          el.response.innerText = 'Connection opened';
-          ws.send(JSON.stringify({ type: "open", payload: null }));
-        };
+        updateRealtimeChart([]);
+        updatePeriodCharts([], [], [], []);
 
-        ws.onclose = function (event) {
-          console.log('Connection closed');
-          el.response.innerText = 'Connection closed';
-          // console.log(event);
-        };
+        while (el.target.length > 1) {
+          el.target.remove(el.target.length - 1);
+        }
+      }
 
-        ws.onmessage = function (event) {
-          try {
-            const msg = JSON.parse(event.data);
-            // console.log(msg);
+      function updateRealtimeChart(pings) {
+        zingchart.exec('RealtimeChart', 'setseriesvalues', {
+          values: [pings],
+        });
+      }
 
-            if (msg.type === undefined || msg.payload === undefined) {
-              console.log('Invalid message:', msg);
-            } else {
-              switch (msg.type) {
-                case 'ping-settings':
-                  onSettings(msg.payload);
-                  break;
-                case 'ping-update':
-                  onUpdate(msg.payload);
-                  break;
-                case 'ping-period':
-                  onPeriod(msg.payload);
-                  break;
-                case 'ping-history':
-                  onHistory(msg.payload);
-                  break;
-                default:
-                  break;
+      function updatePeriodCharts(loss, mdn, p90, p99) {
+        zingchart.exec('PacketsChart', 'setseriesvalues', {
+          values: [loss],
+        });
+        zingchart.exec('LatencyChart', 'setseriesvalues', {
+          values: [p99, p90, mdn],
+        });
+      }
+
+      function connect(host) {
+        try {
+          if (ws) ws.close();
+
+          reset();
+
+          ws = new WebSocket('ws://' + host + '/websocket/');
+
+          ws.onerror = function (event) {
+            console.error(event);
+            el.response.innerText = 'Connection Error';
+          };
+
+          ws.onopen = function () {
+            console.log('Connection opened');
+            el.response.innerText = 'Connection opened';
+            ws.send(JSON.stringify({ type: 'open', payload: null }));
+          };
+
+          ws.onclose = function (event) {
+            console.log('Connection closed');
+            el.response.innerText = 'Connection closed';
+            // console.log(event);
+          };
+
+          ws.onmessage = function (event) {
+            try {
+              const msg = JSON.parse(event.data);
+              // console.log(msg);
+
+              if (msg.type === undefined || msg.payload === undefined) {
+                console.log('Invalid message:', msg);
+              } else {
+                switch (msg.type) {
+                  case 'ping-settings':
+                    onSettings(msg.payload);
+                    break;
+                  case 'ping-update':
+                    onUpdate(msg.payload);
+                    break;
+                  case 'ping-period':
+                    onPeriod(msg.payload);
+                    break;
+                  case 'ping-history':
+                    onHistory(msg.payload);
+                    break;
+                  default:
+                    break;
+                }
               }
+            } catch (e) {
+              console.error(e);
             }
-          } catch (e) {
-            console.error(e);
-          }
-        };
-      } catch (error) {
-        console.error(error);
+          };
+        } catch (error) {
+          console.error(error);
+        }
       }
-    }
 
-    function buildCharts() {
-      zingchart.render({
-        id: 'RealtimeChart',
-        data: {
-          type: "area",
-          title: {
-            text: 'Realtime Latency (last minute)',
-            adjustLayout: true,
-            fontSize: 14,
-          },
-          plot: {
-            decimals: 0,
-            aspect: 'stepped',
-            marker: {
-              visible: false
-            }
-          },
-          tooltip: {
-            text: '%vms'
-          },
-          plotarea: {
-            margin: 'dynamic'
-          },
-          series: [
-            {
-              values: []
-            }
-          ]
-        },
-        height: 180,
-        width: '100%',
-        defaults: {
-          palette: {
-            area: [
-              ["#ffffff", "#28a2cc", "#28a2cc", "#28a2cc"],
-              ["#ffffff", "#d31e1e", "#d31e1e", "#d31e1e"],
-            ]
-          }
-        }
-      });
-
-      zingchart.render({
-        id: 'PacketsChart',
-        data: {
-          type: "area",
-          title: {
-            text: 'Packet Loss History',
-            adjustLayout: true,
-            fontSize: 14,
-          },
-          legend: {
-            layout: "1x1",
-          },
-          plot: {
-            decimals: 1,
-            aspect: 'stepped',
-            marker: {
-              visible: false
-            }
-          },
-          tooltip: {
-            text: '%v% at %kl'
-          },
-          plotarea: {
-            margin: 'dynamic'
-          },
-          scaleX: {
-            transform: {
-              type: 'date',
-              all: '%H:%i'
-              // all: '%m/%d/%y<br>%h:%i %A'
-            }
-          },
-          series: [
-            {
-              text: "% loss",
-              values: []
-            }
-          ]
-        },
-        height: 180,
-        width: '100%',
-        defaults: {
-          palette: {
-            area: [
-              ["#ffffff", "#d31e1e", "#d31e1e", "#d31e1e"],
-            ]
-          }
-        }
-      });
-
-      zingchart.render({
-        id: 'LatencyChart',
-        data: {
-          type: "area",
-          title: {
-            text: 'Latency History',
-            adjustLayout: true,
-            fontSize: 14,
-          },
-          legend: {
-            layout: "1x3",
-          },
-          plot: {
-            decimals: 1,
-            aspect: 'stepped',
-            marker: {
-              visible: false
-            }
-          },
-          tooltip: {
-            text: '%vms at %kl'
-          },
-          plotarea: {
-            margin: 'dynamic'
-          },
-          scaleX: {
-            transform: {
-              type: 'date',
-              all: '%H:%i'
-              // all: '%m/%d/%y<br>%h:%i %A'
-            }
-          },
-          series: [
-            {
-              text: "99%",
-              values: []
+      function buildCharts() {
+        zingchart.render({
+          id: 'RealtimeChart',
+          data: {
+            type: 'area',
+            title: {
+              text: 'Realtime Latency (last minute)',
+              adjustLayout: true,
+              fontSize: 14,
             },
-            {
-              text: "90%",
-              values: []
+            plot: {
+              decimals: 0,
+              aspect: 'stepped',
+              marker: {
+                visible: false,
+              },
             },
-            {
-              text: "Median",
-              values: []
-            }
-          ]
-        },
-        height: 180,
-        width: '100%',
-        defaults: {
-          palette: {
-            area: [
-              ["#ffffff", "#a3c2cc", "#a3c2cc", "#a3c2cc"],
-              ["#ffffff", "#7ab8cc", "#7ab8cc", "#7ab8cc"],
-              ["#ffffff", "#28a2cc", "#28a2cc", "#28a2cc"],
-            ]
+            tooltip: {
+              text: '%vms',
+            },
+            plotarea: {
+              margin: 'dynamic',
+            },
+            series: [
+              {
+                values: [],
+              },
+            ],
+          },
+          height: 180,
+          width: '100%',
+          defaults: {
+            palette: {
+              area: [
+                ['#ffffff', '#28a2cc', '#28a2cc', '#28a2cc'],
+                ['#ffffff', '#d31e1e', '#d31e1e', '#d31e1e'],
+              ],
+            },
+          },
+        });
+
+        zingchart.render({
+          id: 'PacketsChart',
+          data: {
+            type: 'area',
+            title: {
+              text: 'Packet Loss History',
+              adjustLayout: true,
+              fontSize: 14,
+            },
+            legend: {
+              layout: '1x1',
+            },
+            plot: {
+              decimals: 1,
+              aspect: 'stepped',
+              marker: {
+                visible: false,
+              },
+            },
+            tooltip: {
+              text: '%v% at %kl',
+            },
+            plotarea: {
+              margin: 'dynamic',
+            },
+            scaleX: {
+              transform: {
+                type: 'date',
+                all: '%H:%i',
+                // all: '%m/%d/%y<br>%h:%i %A'
+              },
+            },
+            series: [
+              {
+                text: '% loss',
+                values: [],
+              },
+            ],
+          },
+          height: 180,
+          width: '100%',
+          defaults: {
+            palette: {
+              area: [['#ffffff', '#d31e1e', '#d31e1e', '#d31e1e']],
+            },
+          },
+        });
+
+        zingchart.render({
+          id: 'LatencyChart',
+          data: {
+            type: 'area',
+            title: {
+              text: 'Latency History',
+              adjustLayout: true,
+              fontSize: 14,
+            },
+            legend: {
+              layout: '1x3',
+            },
+            plot: {
+              decimals: 1,
+              aspect: 'stepped',
+              marker: {
+                visible: false,
+              },
+            },
+            tooltip: {
+              text: '%vms at %kl',
+            },
+            plotarea: {
+              margin: 'dynamic',
+            },
+            scaleX: {
+              transform: {
+                type: 'date',
+                all: '%H:%i',
+                // all: '%m/%d/%y<br>%h:%i %A'
+              },
+            },
+            series: [
+              {
+                text: '99%',
+                values: [],
+              },
+              {
+                text: '90%',
+                values: [],
+              },
+              {
+                text: 'Median',
+                values: [],
+              },
+            ],
+          },
+          height: 180,
+          width: '100%',
+          defaults: {
+            palette: {
+              area: [
+                ['#ffffff', '#a3c2cc', '#a3c2cc', '#a3c2cc'],
+                ['#ffffff', '#7ab8cc', '#7ab8cc', '#7ab8cc'],
+                ['#ffffff', '#28a2cc', '#28a2cc', '#28a2cc'],
+              ],
+            },
+          },
+        });
+      }
+
+      function onSettings(payload) {
+        el.settings.innerText = formatJSON(payload);
+        gSettings = payload;
+        gSelected = payload.targets[0];
+
+        payload.targets.forEach((target, i) => {
+          const option = document.createElement('option');
+          option.text = target;
+          el.target.add(option);
+        });
+
+        el.target.value = gSelected;
+        el.target.disabled = false;
+        el.recent.labels.forEach((label) => {
+          label.innerText = 'Last ' + getNumberText(gSettings.period, 'min', 'mins');
+        });
+
+        HISTORY_LIMIT = (gHours * 60) / gSettings.period;
+        PING_LIMIT = (60 * 1000) / gSettings.interval;
+      }
+
+      function onUpdate(payload) {
+        if (!payload.target) return;
+
+        const target = payload.target;
+
+        if (gHistory[target]) {
+          gHistory[target].update = payload;
+          gHistory[target].pings.push(payload.last.ping);
+          gHistory[target].pings = gHistory[target].pings.slice(-PING_LIMIT);
+
+          popTargetHistory(target);
+
+          const now = Date.now();
+          gHistory[target].loss.push([now, (payload.recent.lost / payload.recent.sent) * 100]);
+          gHistory[target].mdn.push([now, payload.recent.stats.mdn]);
+          gHistory[target].p90.push([now, payload.recent.stats.p90]);
+          gHistory[target].p99.push([now, payload.recent.stats.p99]);
+
+          if (target === gSelected) {
+            updateStatistics(payload);
+            updateRealtimeChart(gHistory[target].pings);
+            updatePeriodCharts(gHistory[target].loss, gHistory[target].mdn, gHistory[target].p90, gHistory[target].p99);
           }
         }
-      });
+      }
 
-    }
+      function formatJSON(data) {
+        return JSON.stringify(data).replaceAll(',', ', ');
+      }
 
-    function onSettings(payload) {
-      el.settings.innerText = formatJSON(payload);
-      gSettings = payload;
-      gSelected = payload.targets[0];
+      function updateStatistics(payload) {
+        if (!payload) return;
 
-      payload.targets.forEach((target, i) => {
-        const option = document.createElement("option");
-        option.text = target;
-        el.target.add(option);
-      });
+        el.response.innerText = formatJSON(payload.last.status);
 
-      el.target.value = gSelected;
-      el.target.disabled = false;
-      el.recent.labels.forEach(label => {
-        label.innerText = 'Last ' + getNumberText(gSettings.period, 'min', 'mins');
-      });
+        el.recent.errors.innerText = formatJSON(payload.recent.errors);
+        el.recent.sent.innerText = payload.recent.sent;
+        el.recent.lost.innerText = payload.recent.lost;
+        el.recent.loss.innerText = ((payload.recent.lost / payload.recent.sent) * 100).toFixed(1) + '%';
 
-      HISTORY_LIMIT = gHours * 60 / gSettings.period;
-      PING_LIMIT = 60 * 1000 / gSettings.interval;
-    }
+        el.recent.ping.p50.innerText = payload.recent.stats.mdn;
+        el.recent.ping.p90.innerText = payload.recent.stats.p90;
+        el.recent.ping.p99.innerText = payload.recent.stats.p99;
 
-    function onUpdate(payload) {
-      if (!payload.target) return;
+        el.overall.errors.innerText = formatJSON(payload.overall.errors);
+        el.overall.sent.innerText = payload.overall.sent;
+        el.overall.lost.innerText = payload.overall.lost;
+        el.overall.loss.innerText = ((payload.overall.lost / payload.overall.sent) * 100).toFixed(1) + '%';
 
-      const target = payload.target;
+        el.overall.ping.p50.innerText = payload.overall.stats.mdn;
+        el.overall.ping.p90.innerText = payload.overall.stats.p90;
+        el.overall.ping.p99.innerText = payload.overall.stats.p99;
+      }
 
-      if (gHistory[target]) {
-        gHistory[target].update = payload;
-        gHistory[target].pings.push(payload.last.ping);
-        gHistory[target].pings = gHistory[target].pings.slice(-PING_LIMIT);
+      function onPeriod(payload) {
+        const target = payload.target;
+        const date = payload.date;
+        const stats = payload.stats;
 
         popTargetHistory(target);
 
-        const now = Date.now();
-        gHistory[target].loss.push([now, payload.recent.lost / payload.recent.sent * 100]);
-        gHistory[target].mdn.push([now, payload.recent.stats.mdn]);
-        gHistory[target].p90.push([now, payload.recent.stats.p90]);
-        gHistory[target].p99.push([now, payload.recent.stats.p99]);
+        gHistory[target].loss.push([date, (stats.lost / stats.sent) * 100]);
+        gHistory[target].mdn.push([date, stats.ping.mdn]);
+        gHistory[target].p90.push([date, stats.ping.p90]);
+        gHistory[target].p99.push([date, stats.ping.p99]);
+
+        addLastPoint(target);
+
+        sliceTargetHistory(target);
 
         if (target === gSelected) {
-          updateStatistics(payload);
-          updateRealtimeChart(gHistory[target].pings);
           updatePeriodCharts(gHistory[target].loss, gHistory[target].mdn, gHistory[target].p90, gHistory[target].p99);
         }
       }
-    }
 
-    function formatJSON(data) {
-      return JSON.stringify(data).replaceAll(',', ', ');
-    }
+      function onHistory(payload) {
+        const p = gSettings.period * 60 * 1000;
+        const now = Date.now();
 
-    function updateStatistics(payload) {
-      if (!payload) return;
+        Object.keys(payload).forEach((target) => {
+          setTargetHistory(target, payload[target], p, now);
+        });
 
-      el.response.innerText = formatJSON(payload.last.status);
+        const h = gHistory[gSelected];
 
-      el.recent.errors.innerText = formatJSON(payload.recent.errors);
-      el.recent.sent.innerText = payload.recent.sent;
-      el.recent.lost.innerText = payload.recent.lost;
-      el.recent.loss.innerText = (payload.recent.lost / payload.recent.sent * 100).toFixed(1) + '%';
-
-      el.recent.ping.p50.innerText = payload.recent.stats.mdn;
-      el.recent.ping.p90.innerText = payload.recent.stats.p90;
-      el.recent.ping.p99.innerText = payload.recent.stats.p99;
-
-      el.overall.errors.innerText = formatJSON(payload.overall.errors);
-      el.overall.sent.innerText = payload.overall.sent;
-      el.overall.lost.innerText = payload.overall.lost;
-      el.overall.loss.innerText = (payload.overall.lost / payload.overall.sent * 100).toFixed(1) + '%';
-
-      el.overall.ping.p50.innerText = payload.overall.stats.mdn;
-      el.overall.ping.p90.innerText = payload.overall.stats.p90;
-      el.overall.ping.p99.innerText = payload.overall.stats.p99;
-    }
-
-    function onPeriod(payload) {
-      const target = payload.target;
-      const date = payload.date;
-      const stats = payload.stats;
-
-      popTargetHistory(target);
-
-      gHistory[target].loss.push([date, stats.lost / stats.sent * 100]);
-      gHistory[target].mdn.push([date, stats.ping.mdn]);
-      gHistory[target].p90.push([date, stats.ping.p90]);
-      gHistory[target].p99.push([date, stats.ping.p99]);
-
-      addLastPoint(target);
-
-      sliceTargetHistory(target);
-
-      if (target === gSelected) {
-        updatePeriodCharts(gHistory[target].loss, gHistory[target].mdn, gHistory[target].p90, gHistory[target].p99);
+        updatePeriodCharts(h.loss, h.mdn, h.p90, h.p99);
       }
-    }
 
-    function onHistory(payload) {
-      const p = gSettings.period * 60 * 1000;
-      const now = Date.now();
+      function setTargetHistory(target, items, p, now) {
+        gHistory[target] = {
+          pings: [],
+          loss: [],
+          mdn: [],
+          p90: [],
+          p99: [],
+        };
 
-      Object.keys(payload).forEach(target => {
-        setTargetHistory(target, payload[target], p, now);
-      });
+        const history = gHistory[target];
 
-      const h = gHistory[gSelected];
+        items.forEach((item) => {
+          const stats = item.stats;
+          history.loss.push([align(item.date, p), stats ? (stats.lost / stats.sent) * 100 : null]);
+          history.mdn.push([align(item.date, p), stats ? stats.ping.mdn : null]);
+          history.p90.push([align(item.date, p), stats ? stats.ping.p90 : null]);
+          history.p99.push([align(item.date, p), stats ? stats.ping.p99 : null]);
+        });
 
-      updatePeriodCharts(h.loss, h.mdn, h.p90, h.p99);
-    }
+        addLastPoint(target);
 
-    function setTargetHistory(target, items, p, now) {
-      gHistory[target] = {
-        pings: [],
-        loss: [],
-        mdn: [],
-        p90: [],
-        p99: []
-      };
-
-      items.forEach(item => {
-        gHistory[target].loss.push([align(item.date, p), item.stats ? (item.stats.lost / item.stats.sent * 100) : null]);
-        gHistory[target].mdn.push([align(item.date, p), item.stats ? item.stats.ping.mdn : null]);
-        gHistory[target].p90.push([align(item.date, p), item.stats ? item.stats.ping.p90 : null]);
-        gHistory[target].p99.push([align(item.date, p), item.stats ? item.stats.ping.p99 : null]);
-      });
-
-      addLastPoint(target);
-
-      sliceTargetHistory(target);
-    }
-
-    function popTargetHistory(target) {
-      gHistory[target].loss.pop();
-      gHistory[target].mdn.pop();
-      gHistory[target].p90.pop();
-      gHistory[target].p99.pop();
-    }
-
-    function sliceTargetHistory(target) {
-      gHistory[target].loss = gHistory[target].loss.slice(-HISTORY_LIMIT);
-      gHistory[target].mdn = gHistory[target].mdn.slice(-HISTORY_LIMIT);
-      gHistory[target].p90 = gHistory[target].p90.slice(-HISTORY_LIMIT);
-      gHistory[target].p99 = gHistory[target].p99.slice(-HISTORY_LIMIT);
-    }
-
-    function addLastPoint(target) {
-      const now = Date.now();
-      gHistory[target].loss.push([now, 0]);
-      gHistory[target].mdn.push([now, 0]);
-      gHistory[target].p90.push([now, 0]);
-      gHistory[target].p99.push([now, 0]);
-    }
-
-    function align(time, period) {
-      return Math.round(time / period) * period;
-    }
-
-    function getNumberText(number, singular, plural) {
-      if (number <= 0) {
-        return `no ${plural}`;
-      } if (number === 1) {
-        return `1 ${singular}`;
-      } else {
-        return `${number} ${plural}`;
+        sliceTargetHistory(target);
       }
-    }
-  </script>
-</body>
 
+      function popTargetHistory(target) {
+        gHistory[target].loss.pop();
+        gHistory[target].mdn.pop();
+        gHistory[target].p90.pop();
+        gHistory[target].p99.pop();
+      }
+
+      function sliceTargetHistory(target) {
+        gHistory[target].loss = gHistory[target].loss.slice(-HISTORY_LIMIT);
+        gHistory[target].mdn = gHistory[target].mdn.slice(-HISTORY_LIMIT);
+        gHistory[target].p90 = gHistory[target].p90.slice(-HISTORY_LIMIT);
+        gHistory[target].p99 = gHistory[target].p99.slice(-HISTORY_LIMIT);
+      }
+
+      function addLastPoint(target) {
+        const now = Date.now();
+        gHistory[target].loss.push([now, 0]);
+        gHistory[target].mdn.push([now, 0]);
+        gHistory[target].p90.push([now, 0]);
+        gHistory[target].p99.push([now, 0]);
+      }
+
+      function align(time, period) {
+        return Math.round(time / period) * period;
+      }
+
+      function getNumberText(number, singular, plural) {
+        if (number <= 0) {
+          return `no ${plural}`;
+        } else if (number === 1) {
+          return `1 ${singular}`;
+        } else {
+          return `${number} ${plural}`;
+        }
+      }
+    </script>
+  </body>
 </html>
