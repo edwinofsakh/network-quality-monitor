@@ -4,32 +4,22 @@ Tools for long-term monitoring of network quality.
 
 ## Installation
 
-### Local version
+```bash
+$ npm i -g network-quality-monitor
+```
+
+or
 
 ```bash
 $ git clone https://github.com/edwinofsakh/network-quality-monitor.git
 $ npm install
 ```
 
-### Global version
-
-**Note**: Currently it do not work well.
-
-```bash
-$ npm i -g network-quality-monitor
-```
-
 ## Usage
 
 ### Ping Monitor
 
-Local version
-
-```bash
-$ node ping-monitor-cli.js --help
-```
-
-Global version
+Monitor ping for given ip address.
 
 ```bash
 $ ping-monitor --help
@@ -88,13 +78,7 @@ Realtime Chart
 
 ### Http Monitor
 
-Local version
-
-```bash
-$ node http-monitor-cli.js --help
-```
-
-Global version
+Monitor http responses for given url.
 
 ```bash
 $ http-monitor --help
@@ -102,12 +86,11 @@ $ http-monitor --help
 
 ### Ping Monitor Server
 
-It use env variable `PORT`. Default value it `4250`.
-
-Local version
+Run ping monitor server on http://localhost:4250.
+Port can be changed via `PORT` env variable.
 
 ```bash
-$ node ping-monitor-server.js 192.168.1.1 1.1.1.1
+$ ping-monitor-server 192.168.1.1 1.1.1.1
 ```
 
 ## Debugging
