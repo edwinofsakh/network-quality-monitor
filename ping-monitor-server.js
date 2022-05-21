@@ -12,11 +12,16 @@ const PORT = process.env.PORT || 4250;
 const INDEX = '/views/index.html';
 const DAY = 24 * 60 * 60 * 1000;
 
+console.log();
+console.log(`Ping Monitor Server`);
+
 const app = express();
 
 app.get('/', (_req, res) => res.sendFile(INDEX, { root: __dirname }));
 
-const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+const server = app.listen(PORT, () => {
+    console.log(`Listening on http://localhost:${PORT}`)
+});
 
 const wss = new Server({ server, path: '/websocket/' });
 

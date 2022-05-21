@@ -206,7 +206,7 @@ class MonitorWriter {
             fs.accessSync(this._dir, fs.constants.R_OK | fs.constants.W_OK);
         } catch (err) {
             if (err.code === 'ENOENT') {
-                fs.mkdirSync(dir);
+                fs.mkdirSync(this._dir);
             } else {
                 failed = true;
             }
@@ -333,7 +333,7 @@ class MonitorClient extends ConsoleClient {
         const errors = this._prepareErrorsOutput();
 
         const last = this._monitor.last;
-        const response = ` ${last[2]} - ${last[1]}ms`
+        const response = last ? ` ${last.status} - ${last.time}ms`: '';
         const realtime = (this._options.chart) ? `\nRealtime Chart\n${chart.prepare(this._monitor.overall.stats)}` : '';
         const output = `\n${latency}\n\n${packets}\n\n${errors}\n${realtime}\n${spinner}${debug}${response}`;
         return output;

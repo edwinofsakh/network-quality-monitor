@@ -41,6 +41,8 @@ class GeneralMonitor extends EventEmitter {
         // monitor options
         this._options = Object.assign({threshold: 500, timeout: 2000, interval: 2000, period: 15}, options || {});
 
+        this._last = null;
+
         // overall statistics
         this._overall = {
             sent: 0,
