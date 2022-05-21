@@ -8,8 +8,9 @@
     "test": "mocha"
   },
   "bin": {
-    "ping-monitor": "./ping-monitor-cli.js",
-    "http-monitor": "./http-monitor-cli.js"
+    "http-monitor": "bin/http-monitor.js",
+    "ping-monitor-server": "bin/ping-monitor-server.js",
+    "ping-monitor": "bin/ping-monitor.js"
   },
   "repository": {
     "type": "git",
