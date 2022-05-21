@@ -1,5 +1,6 @@
 const http = require('http');
 const https = require('https');
+const { exit } = require('process');
 const { GeneralMonitor } = require('./monitor');
 
 class RequestTimedOutError extends Error {
@@ -77,9 +78,12 @@ class HttpMonitor extends GeneralMonitor {
         let error;
         // Any 2xx status code signals a successful response but
         // here we're only checking for 200.
-        if (statusCode !== 200) {
+        if (statusCode === 301) {
+          console.log('Redirect', res.headers.location);
+          exit(0);
+        } else if (statusCode !== 200) {
           error = new Error(`Request Failed.\nStatus Code: ${statusCode}`);
-        } else if (!(contentType.indexOf('application/json') > -1 || contentType === 'text/html')) {
+        } else if (!(contentType.indexOf('application/json') > -1 || contentType !== 'text/html')) {
           error = new Error(
             `Invalid content-type.\nExpected application/json or text/html but received ${contentType}`
           );

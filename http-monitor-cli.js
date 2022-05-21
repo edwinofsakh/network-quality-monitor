@@ -44,6 +44,10 @@ const cli = meow(
         type: 'boolean',
         default: false,
       },
+      testing: {
+        type: 'boolean',
+        default: false,
+      },
     },
   }
 );
