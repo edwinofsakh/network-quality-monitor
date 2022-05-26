@@ -103,6 +103,18 @@ Set env variable `DEBUG=ping-monitor-server`
 
 ## History
 
+**0.3.3**
+
+- Fix UI
+
+**0.3.2**
+
+- Improve documentation
+
+**0.3.1**
+
+- Improve nib scripts
+
 **0.3.0**
 
 - Add web interface

@@ -1,6 +1,6 @@
 {
   "name": "network-quality-monitor",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Tools for long-term monitoring of network quality.",
   "main": "ping-monitor-cli.js",
   "scripts": {

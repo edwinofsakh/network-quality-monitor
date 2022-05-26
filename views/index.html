@@ -28,7 +28,7 @@
     <header>
       <nav class="mb-1 navbar navbar-dark bg-dark">
         <div class="container">
-          <span class="navbar-brand mb-0 h1">Ping Monitor v0.3.0</span>
+          <span class="navbar-brand mb-0 h1">Ping Monitor v0.3.3</span>
         </div>
       </nav>
     </header>
@@ -617,10 +617,19 @@
 
         items.forEach((item) => {
           const stats = item.stats;
-          history.loss.push([align(item.date, p), stats ? (stats.lost / stats.sent) * 100 : null]);
-          history.mdn.push([align(item.date, p), stats ? stats.ping.mdn : null]);
-          history.p90.push([align(item.date, p), stats ? stats.ping.p90 : null]);
-          history.p99.push([align(item.date, p), stats ? stats.ping.p99 : null]);
+          const time = align(item.date, p);
+          if (stats) {
+            const loss = stats.sent === 0 ? 0 : (stats.lost / stats.sent) * 100;
+            history.loss.push([time, loss]);
+            history.mdn.push([time, stats.ping.mdn]);
+            history.p90.push([time, stats.ping.p90]);
+            history.p99.push([time, stats.ping.p99]);
+          } else {
+            history.loss.push([time, null]);
+            history.mdn.push([time, null]);
+            history.p90.push([time, null]);
+            history.p99.push([time, null]);
+          }
         });
 
         addLastPoint(target);
