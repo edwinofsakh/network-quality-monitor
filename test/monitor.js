@@ -49,72 +49,73 @@ describe('GeneralMonitor', () => {
     });
 
     afterEach(() => {
-      this.monitor.stop();
-      this.clock = sinon.restore();
+      this.monitor?.stop();
+      this.clock?.restore();
     });
 
     it('should execute task immediately after start', () => {
       const spy = sinon.spy();
-      this.monitor.start(spy);
+      this.monitor?.start(spy);
       expect(spy.calledOnce).to.be.true;
     });
 
     it('should throws error if already started', () => {
-      this.monitor.start((cb) => cb(null, new Date(), new Date()));
+      this.monitor?.start((cb) => cb(null, new Date(), new Date()));
       expect(() => {
-        this.monitor.start((cb) => cb(null, new Date(), new Date()));
+        this.monitor?.start((cb) => cb(null, new Date(), new Date()));
       }).to.throw(Error, 'Monitor is already started');
     });
 
     it('should throw error if task is not function', () => {
       expect(() => {
-        this.monitor.start(true);
+        // @ts-ignore
+        this.monitor?.start(true);
       }).to.throw();
     });
 
     it('should not emit update event if task did not call callback', () => {
       const spy = sinon.spy();
-      this.monitor.on('update', spy);
-      this.monitor.start(() => {});
+      this.monitor?.on('update', spy);
+      this.monitor?.start(() => {});
       expect(spy.called).to.be.false;
     });
 
     it('should emit start event', () => {
       const spy1 = sinon.spy();
       const spy2 = sinon.spy();
-      this.monitor.on('start', spy1);
-      this.monitor.on('start', spy2);
-      this.monitor.start((cb) => cb(null, new Date(), new Date()));
+      this.monitor?.on('start', spy1);
+      this.monitor?.on('start', spy2);
+      this.monitor?.start((cb) => cb(null, new Date(), new Date()));
       expect(spy1.calledOnce).to.be.true;
       expect(spy2.calledOnce).to.be.true;
     });
 
     it('should emit update events', () => {
       const updateSpy = sinon.spy();
-      this.monitor.on('update', updateSpy);
-      this.monitor.start((cb) => cb(null, new Date(), new Date()));
+      this.monitor?.on('update', updateSpy);
+      this.monitor?.start((cb) => cb(null, new Date(), new Date()));
       expect(updateSpy.calledOnce).to.be.true;
-      this.clock.tick(1001);
+      this.clock?.tick(1001);
       expect(updateSpy.calledTwice).to.be.true;
     });
 
     it('should emit period events', () => {
       const updateSpy = sinon.spy();
       const periodSpy = sinon.spy();
-      this.monitor.on('update', updateSpy);
-      this.monitor.on('period', periodSpy);
-      this.monitor.start((cb) => cb(null, new Date(), new Date()));
-      this.clock.tick(2 * 60 * 1000 + 5);
+      this.monitor?.on('update', updateSpy);
+      this.monitor?.on('period', periodSpy);
+      this.monitor?.start((cb) => cb(null, new Date(), new Date()));
+      this.clock?.tick(2 * 60 * 1000 + 5);
       expect(updateSpy.callCount).to.be.equal(121);
       expect(periodSpy.callCount).to.be.equal(2);
     });
 
     it('should emit update event for failed execution', () => {
       const onUpdate = sinon.spy();
-      this.monitor.on('update', onUpdate);
-      this.monitor.start((cb) => cb(new Error('Test'), new Date(), new Date()));
+      this.monitor?.on('update', onUpdate);
+      this.monitor?.start((cb) => cb(new Error('Test'), new Date(), new Date()));
       expect(onUpdate.calledOnce).to.be.true;
-      expect(this.monitor.overall.lost).to.be.equal(1);
+      expect(this.monitor?.overall.lost).to.be.equal(1);
     });
   });
 

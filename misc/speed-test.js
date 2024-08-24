@@ -25,6 +25,10 @@ async function main() {
   clearInterval(id);
 }
 
+/**
+ * Downloads data.
+ * @returns {Promise<void>}
+ */
 function download() {
   return new Promise((resolve, reject) => {
     logUpdate.clear();
@@ -51,7 +55,7 @@ function download() {
       // here we're only checking for 200.
       if (statusCode !== 200) {
         error = new Error(`Request Failed.\nStatus Code: ${statusCode}`);
-      } else if (contentType.indexOf('text/plain') === -1) {
+      } else if (!contentType || contentType.indexOf('text/plain') === -1) {
         error = new Error(`Invalid content-type.\nExpected text/plain but received ${contentType}`);
       }
 
@@ -65,7 +69,10 @@ function download() {
       }
 
       res.setEncoding('utf8');
-      let start, end;
+      /** @type {number} */
+      let start;
+      /** @type {number} */
+      let end;
       let rawData = '';
       res.on('data', (chunk) => {
         if (!rawData) {
@@ -93,6 +100,10 @@ function download() {
   });
 }
 
+/**
+ * Uploads data.
+ * @returns {Promise<void>}
+ */
 function upload() {
   return new Promise((resolve, reject) => {
     logUpdate.clear();
@@ -120,8 +131,13 @@ function upload() {
       res.on('data', (data) => {
         console.log(`Data: ${data}`);
         const size = content.length / 1024 / 1024;
-        const time = parseFloat(res.headers['x-response-time']);
-        console.log(`${size}MB in ${time}ms ${((size / time) * 8000).toFixed(2)} Mb/s`);
+        const responseTime = res.headers['x-response-time'];
+        if (typeof responseTime == 'string') {
+          const time = parseFloat(responseTime);
+          console.log(`${size}MB in ${time}ms ${((size / time) * 8000).toFixed(2)} Mb/s`);
+        } else {
+          console.log('No response time');
+        }
         resolve();
       });
     });

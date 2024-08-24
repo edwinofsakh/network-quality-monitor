@@ -8,6 +8,14 @@ const { Server } = require('ws');
 const { PingMonitor } = require('./utils/ping-monitor');
 const { argv } = require('process');
 
+/**
+ * History item
+ * @typedef {object} HistoryItem
+ * @property {string} target - target
+ * @property {number} date - date
+ * @property {*} stats - stats
+ */
+
 const PORT = process.env.PORT || 4250;
 const INDEX = '/views/index.html';
 const DAY = 24 * 60 * 60 * 1000;
@@ -41,6 +49,7 @@ const gSettings = {
   interval: options.interval,
   period: options.period,
 };
+/** @type {Record<string, HistoryItem[]>} */
 const gHistory = {};
 
 loadHistory()
@@ -64,6 +73,9 @@ loadHistory()
     console.log(err.message);
   });
 
+/**
+ * Loads history.
+ */
 async function loadHistory() {
   debug('loading history');
 
@@ -81,21 +93,33 @@ async function loadHistory() {
   });
 }
 
+/**
+ * Loads history file.
+ * @param {string} filename - file name
+ * @returns {Promise<void>}
+ */
 async function loadHistoryFile(filename) {
   const period = gSettings.period * 60 * 1000;
 
   return new Promise((resolve) => {
     try {
       const stream = fs.createReadStream(filename);
-      stream.on('error', (err) => {
-        if (err.code !== 'ENOENT') {
-          console.log(err.message);
-        } else {
-          debug(`${filename} not found`);
-        }
+      stream.on(
+        'error',
+        /**
+         * Error handler.
+         * @param {Error & {code?: string}} err - error
+         */
+        (err) => {
+          if (err.code !== 'ENOENT') {
+            console.log(err.message);
+          } else {
+            debug(`${filename} not found`);
+          }
 
-        resolve();
-      });
+          resolve();
+        }
+      );
 
       const rd = readline.createInterface({ input: stream });
 
@@ -119,16 +143,28 @@ async function loadHistoryFile(filename) {
         resolve();
       });
     } catch (err) {
-      console.log(err.message);
+      if (err && typeof err == 'object' && 'message' in err) {
+        console.log(err.message);
+      }
       resolve();
     }
   });
 }
 
+/**
+ * Aligns timestamp.
+ * @param {number} time - timestamp
+ * @param {number} period - period
+ * @returns {number}
+ */
 function align(time, period) {
   return Math.round(time / period) * period;
 }
 
+/**
+ * Saves history.
+ * @param {object} payload - payload
+ */
 function saveHistory(payload) {
   const suffix = new Date().toISOString().slice(0, 10);
   fs.appendFile(`history-${suffix}.txt`, JSON.stringify(payload) + '\n', (err) => {
@@ -136,12 +172,16 @@ function saveHistory(payload) {
   });
 }
 
+/**
+ * Normalizes history.
+ */
 function normalizeHistory() {
   const period = gSettings.period * 60 * 1000;
   const now = Date.now();
   Object.keys(gHistory).forEach((target) => {
     const history = gHistory[target];
     const first = history[0].date;
+    /** @type {Record<number, HistoryItem>} */
     const stats = {};
     history.forEach((item) => (stats[item.date] = item));
 
@@ -152,6 +192,11 @@ function normalizeHistory() {
   });
 }
 
+/**
+ * Handle update event.
+ * @param {string} target - target
+ * @param {PingMonitor} monitor - monitor instance
+ */
 function onUpdate(target, monitor) {
   wss.clients.forEach((client) => {
     client.send(
@@ -160,8 +205,8 @@ function onUpdate(target, monitor) {
         payload: {
           target: target,
           last: {
-            status: monitor.last.status,
-            ping: monitor.last.time,
+            status: monitor.last?.status,
+            ping: monitor.last?.time,
           },
           recent: monitor.recent,
           overall: monitor.overall,
@@ -171,6 +216,12 @@ function onUpdate(target, monitor) {
   });
 }
 
+/**
+ * Handle period event.
+ * @param {string} target - target
+ * @param {PingMonitor} monitor - monitor instance
+ * @param {number} time - timestamp
+ */
 function onPeriod(target, monitor, time) {
   const payload = {
     date: time,
@@ -193,6 +244,11 @@ function onPeriod(target, monitor, time) {
   saveHistory(payload);
 }
 
+/**
+ * Handle client message event.
+ * @param {import("ws").WebSocket} ws - websocket instance
+ * @param {*} data
+ */
 function onClientMessage(ws, data) {
   try {
     const msg = JSON.parse(data);
@@ -214,4 +270,7 @@ function onClientMessage(ws, data) {
   }
 }
 
+/**
+ * Handle close event.
+ */
 function onClientClose() {}

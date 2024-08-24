@@ -1,16 +1,30 @@
 const { Histogram } = require('./histogram');
 
 /**
+ * Stats object
+ * @typedef {object} StatsObject
+ * @property {number} min - minimum
+ * @property {number} mdn - median
+ * @property {number} avg - average
+ * @property {number} p90 - percentile 90
+ * @property {number} p95 - percentile 95
+ * @property {number} p99 - percentile 99
+ * @property {number} max - maximum
+ */
+
+/**
  * Statistics class
  */
 class Statistics {
+  /** @type {{size: number, values: number[]}} */
+  _recent;
+
   /**
-   *
-   * @param {number} min - expected minimum value
-   * @param {number} max - expected maximum value
-   * @param {number} bins - number of bins
-   * @param {string[]} labels - labels
-   * @param {number} size - size of buffer for recent values
+   * @param {number} [min] - expected minimum value
+   * @param {number} [max] - expected maximum value
+   * @param {number} [bins] - number of bins
+   * @param {string[]} [labels] - labels
+   * @param {number} [size] - size of buffer for recent values
    */
   constructor(min, max, bins, labels, size) {
     // Overall statistics
@@ -27,7 +41,7 @@ class Statistics {
   }
 
   /**
-   *
+   * Updates data.
    * @param {number} value - new value
    */
   update(value) {
@@ -93,6 +107,12 @@ class Statistics {
     return this._histogram;
   }
 
+  /**
+   * Calculates percentile.
+   * @param {number[]} values - values
+   * @param {number} p - percentile
+   * @returns
+   */
   static percentile(values, p) {
     const n = values.length;
     if (n === 0) {
@@ -108,6 +128,11 @@ class Statistics {
     }
   }
 
+  /**
+   * Calculates stats.
+   * @param {number[]} values - values
+   * @returns {StatsObject}
+   */
   static stats(values) {
     values.sort((a, b) => a - b);
     const n = values.length;
@@ -123,6 +148,10 @@ class Statistics {
     };
   }
 
+  /**
+   * Converts to JSON object.
+   * @returns {StatsObject}
+   */
   toJSON() {
     return {
       min: this.min,
@@ -141,10 +170,9 @@ class Statistics {
  */
 class DelayStatistics extends Statistics {
   /**
-   *
    * @param {number} max - expected maximum value
    * @param {number} bins - number of bins
-   * @param {string[]} labels - labels
+   * @param {string[]} [labels] - labels
    */
   constructor(max, bins, labels) {
     super(0, max, bins, labels);

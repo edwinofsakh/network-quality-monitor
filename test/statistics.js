@@ -9,7 +9,7 @@ describe('Statistics', () => {
     });
 
     it('should support custom parameters', () => {
-      const stat = new Statistics(-100, 100, 10, 10);
+      const stat = new Statistics(-100, 100, 10);
       expect(stat.count).to.equal(0);
     });
   });
@@ -73,6 +73,7 @@ describe('Statistics', () => {
     });
 
     it('should return zero for empty list', () => {
+      /** @type {number[]} */
       const values = [];
       expect(Statistics.percentile(values, 0)).to.equal(0);
       expect(Statistics.percentile(values, 50)).to.equal(0);
@@ -104,6 +105,7 @@ describe('Statistics', () => {
     });
 
     it('should return zero for empty list', () => {
+      /** @type {number[]} */
       const values = [];
       const stats = Statistics.stats(values);
       expect(stats.min).to.equal(0);

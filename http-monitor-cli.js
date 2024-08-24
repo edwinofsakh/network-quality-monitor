@@ -7,6 +7,7 @@ const cli = meow(
 	Usage
 	  $ node http-monitor-cli.js <target url>
 	Options
+    --config-file    Path to request config file
 	  --timeout -t     Request timeout in milliseconds
 	  --interval -i    Time between requests in milliseconds
 	  --period -p      Period for calculating intermediate statistics in minutes
@@ -17,6 +18,10 @@ const cli = meow(
   {
     description: 'HttpMonitor helps you to monitor server availability',
     flags: {
+      configFile: {
+        type: 'string',
+        default: '',
+      },
       timeout: {
         type: 'number',
         default: 9000,
@@ -52,6 +57,7 @@ const cli = meow(
   }
 );
 
-const monitor = new HttpMonitor(cli.input[0], cli.flags);
+const target = cli.input[0];
+const monitor = new HttpMonitor(target, cli.flags);
 const client = new MonitorClient(monitor, cli.flags);
 client.start();

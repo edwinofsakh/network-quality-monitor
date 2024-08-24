@@ -9,12 +9,17 @@ const { GeneralMonitor } = require('./monitor');
 const SPINNER = ['-', '\\', '|', '/'];
 
 /**
+ * ConsoleClient options
+ * @typedef {object} ConsoleClientOptions
+ * @property {boolean} testing - testing flag
+ */
+
+/**
  * ConsoleClient class
  */
 class ConsoleClient {
   /**
-   *
-   * @param {object} options - client options
+   * @param {Partial<ConsoleClientOptions>} options - client options
    */
   constructor(options) {
     // Current spinner frame
@@ -117,7 +122,6 @@ class ConsoleClient {
 
   /**
    * Clears log update.
-   * @param {string} msg - message
    */
   _clear() {
     logUpdate.clear();
@@ -192,6 +196,10 @@ class ConsoleClient {
 }
 
 class MonitorWriter {
+  /**
+   * @param {string} prefix - prefix
+   * @param {string[]} headers - headers
+   */
   constructor(prefix, headers) {
     this._headers = headers;
     this._dir = path.join('.', 'results');
@@ -205,11 +213,11 @@ class MonitorWriter {
   }
 
   init() {
-    const failed = false;
+    let failed = false;
     try {
       fs.accessSync(this._dir, fs.constants.R_OK | fs.constants.W_OK);
     } catch (err) {
-      if (err.code === 'ENOENT') {
+      if (err && typeof err == 'object' && 'code' in err && err.code === 'ENOENT') {
         fs.mkdirSync(this._dir);
       } else {
         failed = true;
@@ -223,12 +231,19 @@ class MonitorWriter {
     }
   }
 
+  /**
+   * Writes values.
+   * @param {unknown[]} values
+   */
   write(values) {
     if (this._writer) {
       this._writer.write(values);
     }
   }
 
+  /**
+   * Ends writing.
+   */
   end() {
     if (this._writer) {
       this._writer.end();
@@ -237,19 +252,28 @@ class MonitorWriter {
 }
 
 /**
+ * MonitorClient options
+ * @typedef {object} MonitorClientOptions
+ * @property {boolean} save - save data
+ * @property {boolean} chart - show chart
+ * @property {boolean} verbose - verbose flag 
+ * @property {boolean} testing - testing flag
+ */
+
+/**
  * MonitorClient class
  */
 class MonitorClient extends ConsoleClient {
   /**
-   *
    * @param {GeneralMonitor} monitor - monitor instance
-   * @param {object} options - client options
+   * @param {Partial<MonitorClientOptions>} options - client options
    */
   constructor(monitor, options) {
     super(options);
 
     this._options = options;
     this._monitor = monitor;
+    this._sending = false;
 
     this._monitor.on('error', (err) => {
       this._log(`(Error) ${err.message}`);
@@ -287,7 +311,7 @@ class MonitorClient extends ConsoleClient {
    * Starts client.
    */
   start() {
-    this._monitor.start();
+    this._monitor.start(() => {});
   }
 
   /**
@@ -308,14 +332,15 @@ class MonitorClient extends ConsoleClient {
 
   /**
    * Prepares console output.
-   * @returns {string} - console output
    */
   _onPeriod() {
     const r = this._monitor.recent;
+    if (!r.stats) return;
+
+    const mdn = Math.floor(r.stats.mdn ?? 0);
+    const p90 = Math.floor(r.stats.p90 ?? 0);
     this._log(
-      `Packets sent ${r.sent} (${((r.lost / r.sent) * 100).toFixed(1)}% loss), Latency mdn = ${Math.floor(
-        r.stats.mdn
-      )}ms, 90% = ${Math.floor(r.stats.p90)}ms`
+      `Packets sent ${r.sent} (${((r.lost / r.sent) * 100).toFixed(1)}% loss), Latency mdn = ${mdn}ms, 90% = ${p90}ms`
     );
 
     if (this._writer) {
@@ -354,13 +379,18 @@ class MonitorClient extends ConsoleClient {
    * @returns {string} - text
    */
   _prepareLatencyOutput() {
+    const recentStats = this._monitor.recent.stats;
+    const overallStats = this._monitor.overall.stats;
+    if (!recentStats || !overallStats) return '';
+
     const width = Math.max(5, this._monitor.overall.stats.max.toFixed(0).length);
+    /** @type {('min' | 'mdn'| 'avg' | 'p90' | 'p95' | 'p99' | 'max')[]} */
     const stats = ['min', 'mdn', 'avg', 'p90', 'p95', 'p99', 'max'];
 
     return this._printTable([18, width, width, width, width, width, width, width], ' ', ' ', '\n', [
       ['Latency (ms)', 'min', 'mdn', 'avg', '90%', '95%', '99%', 'max'],
-      ['    ' + this._periodLabel, ...stats.map((i) => this._monitor.recent.stats[i].toFixed(0))],
-      ['    Overall', ...stats.map((i) => this._monitor.overall.stats[i].toFixed(0))],
+      ['    ' + this._periodLabel, ...stats.map((i) => recentStats[i].toFixed(0))],
+      ['    Overall', ...stats.map((i) => overallStats[i].toFixed(0))],
     ]);
   }
 
@@ -384,6 +414,7 @@ class MonitorClient extends ConsoleClient {
 
   /**
    * Returns packets statistics.
+   * @param {import("./monitor").OverallStatistics | import("./monitor").RecentStatistics} data
    * @returns {string[]} - packets statistics
    */
   _getPacketStats(data) {

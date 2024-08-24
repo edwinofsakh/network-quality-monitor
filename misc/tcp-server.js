@@ -11,28 +11,42 @@ var server = net.createServer((session) => {
     console.log('Packet Counter received: ' + packet_counter);
   });
 
-  session.on('error', (e) => {
-    if (e.code == 'ECONNRESET') {
-      console.log('Connection closed');
-    } else {
-      console.error('Unhandled session error occurred:');
-      console.error(e);
+  session.on(
+    'error',
+    /**
+     * Error handler.
+     * @param {Error & {code?: string}} e - error
+     */
+    (e) => {
+      if (e.code == 'ECONNRESET') {
+        console.log('Connection closed');
+      } else {
+        console.error('Unhandled session error occurred:');
+        console.error(e);
+      }
     }
-  });
+  );
 
   session.on('end', () => {
     console.log('Connection closed');
   });
 });
 
-server.on('error', (e) => {
-  if (e.code == 'EADDRINUSE') {
-    console.error('Port 3000 already in use');
-  } else {
-    console.error('Unhandled server error occurred:');
-    console.error(e);
+server.on(
+  'error',
+  /**
+   * Error handler.
+   * @param {Error & {code?: string}} e - error
+   */
+  (e) => {
+    if (e.code == 'EADDRINUSE') {
+      console.error('Port 3000 already in use');
+    } else {
+      console.error('Unhandled server error occurred:');
+      console.error(e);
+    }
   }
-});
+);
 
 server.listen(3000, '0.0.0.0');
 

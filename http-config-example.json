@@ -1,0 +1,6 @@
+{
+  "target": "https://www.google.com/",
+  "method": "get",
+  "headers": { "TestKey": "TestValue" },
+  "keepAlive": true
+}

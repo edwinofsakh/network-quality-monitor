@@ -4,15 +4,15 @@ const { DelayStatistics } = require('./statistics');
 const SUCCESS = 'Success';
 
 /**
- * @callback taskCallback
- * @param {Error} err - error
+ * @callback TaskCallback
+ * @param {Error | null} err - error
  * @param {Date} start - start time
  * @param {Date} end - end time
  */
 
 /**
- * @callback taskFunction
- * @param {taskCallback} cb - callback
+ * @callback TaskFunction
+ * @param {TaskCallback} cb - callback
  */
 
 /**
@@ -25,20 +25,72 @@ const SUCCESS = 'Success';
  */
 
 /**
+ * @typedef {object} OverallStatistics
+ * @property {number} sent - ???
+ * @property {number} received - ???
+ * @property {number} lost - ???
+ * @property {DelayStatistics} stats - ???
+ * @property {Record<string, number>} errors - ???
+ */
+
+/**
+ * @typedef {object} RecentStatistics
+ * @property {number} sent - ???
+ * @property {number} received - ???
+ * @property {number} lost - ???
+ * @property {import('./statistics').StatsObject | null} stats - ???
+ * @property {Record<string, number>} errors - ???
+ */
+
+/**
+ * @typedef {object} LastItem
+ * @property {Date} start - start date
+ * @property {number} time - timestamp
+ * @property {string} status - status
+ * @property {string} message - message
+ */
+
+const DEFAULT_OPTIONS = { threshold: 500, timeout: 2000, interval: 2000, period: 15 };
+
+/**
  * This class helps you keep track of the execution time of task.
  *
  * Events: start, stop, error, update, period
  */
 class GeneralMonitor extends EventEmitter {
   /**
-   *
-   * @param {MonitorOptions} options - monitor options
+   * prefix for storing data
+   * @type {string}
+   */
+  _prefix;
+
+  /**
+   * monitor options
+   * @type {MonitorOptions}
+   */
+  _options;
+
+  /** @type {LastItem[]} */
+  _buffer;
+
+  /** @type {OverallStatistics} */
+  _overall;
+
+  /** @type {RecentStatistics} */
+  _recent;
+
+  /** @type {LastItem | null} */
+  _last;
+
+  /**
+   * @param {Partial<MonitorOptions>} [options] - monitor options
    */
   constructor(options) {
     super();
 
-    // monitor options
-    this._options = Object.assign({ threshold: 500, timeout: 2000, interval: 2000, period: 15 }, options || {});
+    this._prefix = 'monitor';
+
+    this._options = Object.assign({ ...DEFAULT_OPTIONS }, options || {});
 
     this._last = null;
 
@@ -56,7 +108,7 @@ class GeneralMonitor extends EventEmitter {
       sent: 0,
       received: 0,
       lost: 0,
-      stats: {},
+      stats: null,
       errors: {},
     };
 
@@ -67,10 +119,18 @@ class GeneralMonitor extends EventEmitter {
     this._started = new Date();
 
     // period index
-    this._period = Math.ceil(this._started / (this._options.period * 60000));
+    this._period = Math.ceil(this._started.valueOf() / (this._options.period * 60000));
 
     // task interval handler
     this._taskInterval = null;
+  }
+
+  get target() {
+    return 'unknown';
+  }
+
+  get prefix() {
+    return this._prefix;
   }
 
   get last() {
@@ -91,8 +151,7 @@ class GeneralMonitor extends EventEmitter {
 
   /**
    * Starts monitoring.
-   *
-   * @param {taskFunction} task - task to execute
+   * @param {TaskFunction} task - task to execute
    */
   start(task) {
     if (!this._running) {
@@ -123,13 +182,13 @@ class GeneralMonitor extends EventEmitter {
 
   /**
    * Executes task.
-   * @param {taskFunction} task - task callback
+   * @param {TaskFunction} task - task callback
    */
   _execute(task) {
     this._executing = true;
     task((error, start, end) => {
       this._executing = false;
-      const time = end - start;
+      const time = end.valueOf() - start.valueOf();
       let status = error ? error.constructor.name : 'Success';
       const message = error ? error.message.trim() : 'Done';
 
@@ -164,8 +223,9 @@ class GeneralMonitor extends EventEmitter {
     const now = Date.now();
     this._last = { start, time, status, message };
     this._buffer.push(this._last);
-    this._buffer = this._buffer.filter((item) => item.start >= now - this._options.period * 60000);
+    this._buffer = this._buffer.filter((item) => item.start.valueOf() >= now - this._options.period * 60000);
 
+    /** @type {number[]} */
     let delays = [];
     this._recent.sent = 0;
     this._recent.received = 0;

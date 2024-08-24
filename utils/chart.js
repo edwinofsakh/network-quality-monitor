@@ -2,27 +2,33 @@ const chart = require('asciichart');
 const { Statistics } = require('./statistics');
 
 /**
+ * Chart options
+ * @typedef {object} ChartOptions
+ * @property {string} padding - padding string
+ * @property {number} height - height
+ * @property {(x: number, i: number) => string} format - format function
+ */
+
+/**
  * Prepares test chart.
  * @param {Statistics} stat - statistics
  */
 function prepare(stat) {
-  const n = Math.min(stat.values.length, process.stdout.columns - 7);
+  if (stat.count < 2) return ' Waiting for data...';
+
+  const columns = process.stdout.columns ?? 0;
+  const n = Math.min(stat.values.length, columns - 7);
+  if (n < 0) return ' Not enough space for chart!';
+
   const options = getChartOptions();
-
-  if (options.height < 3) {
-    return ' Not enough space for chart!';
-  }
-
-  if (stat.count < 2) {
-    return ' Waiting for data...';
-  }
+  if (options.height < 3) return ' Not enough space for chart!';
 
   return chart.plot([stat.values.slice(-n), Array(n).fill(stat.mean)], options);
 }
 
 /**
- * Prepares chart options
- * @returns {object} - chart options
+ * Prepares chart options.
+ * @returns {ChartOptions} - chart options
  */
 function getChartOptions() {
   const padding = '     ';
@@ -39,7 +45,8 @@ function getChartOptions() {
  * @returns {number} - chart height
  */
 function getChartHeight() {
-  return Math.min(24, process.stdout.rows - 8 - 5);
+  const rows = process.stdout.rows ?? 0;
+  return Math.min(24, rows - 8 - 5);
 }
 
 module.exports.prepare = prepare;

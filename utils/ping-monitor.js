@@ -8,9 +8,9 @@ const { GeneralMonitor } = require('./monitor');
  */
 class PingMonitor extends GeneralMonitor {
   /**
-   * Creates ping monitor
-   * @param {string} target - target ip address
-   * @param {object} options - monitor options
+   * Creates ping monitor.
+   * @param {string} [target] - target ip address
+   * @param {object} [options] - monitor options
    */
   constructor(target, options) {
     super(options);
@@ -42,21 +42,33 @@ class PingMonitor extends GeneralMonitor {
   }
 
   /**
-   * Starts ping monitor
+   * Starts ping monitor.
    */
   start() {
     super.start((cb) => this._ping(cb));
   }
 
   /**
-   * Pings target ip address
+   * Pings target ip address.
+   * @param {import("./monitor").TaskCallback} cb - callback
    */
   _ping(cb) {
-    this._session.pingHost(this._target, (error, _target, sent, received) => cb(error, sent, received));
+    this._session.pingHost(
+      this._target,
+      /**
+       * Handles event.
+       * @param {Error} error - error
+       * @param {string} _target - target
+       * @param {Date} sent - sent timestamp
+       * @param {Date} received - received timestamp
+       * @returns
+       */
+      (error, _target, sent, received) => cb(error, sent, received)
+    );
   }
 
   /**
-   * Creates session instance
+   * Creates session instance.
    */
   _createSession() {
     const options = {
@@ -69,10 +81,17 @@ class PingMonitor extends GeneralMonitor {
 
     const session = ping.createSession(options);
 
-    session.on('error', (error) => {
-      this.emit('error', error || new Error('Unknown socket error'));
-      this._session.close();
-    });
+    session.on(
+      'error',
+      /**
+       * Handles error.
+       * @param {Error} error - error
+       */
+      (error) => {
+        this.emit('error', error || new Error('Unknown socket error'));
+        this._session.close();
+      }
+    );
 
     session.on('close', () => {
       this.emit('close');

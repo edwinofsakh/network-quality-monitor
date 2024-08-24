@@ -7,18 +7,23 @@ let nSent = 0;
 let nReceived = 0;
 let nFailed = 0;
 const delay = new DelayStatistics(400, 10);
+/** @type {NodeJS.Timeout} */
 let gTest;
 
 const args = process.argv.slice(2);
 main(args[0]);
 
+/**
+ * Main function.
+ * @param {string} interval - interval
+ */
 function main(interval) {
   ws.on('open', () => {
     console.log('Connection opened');
 
     gTest = setInterval(() => {
       ws.send(++nSent + ' - ' + Date.now());
-    }, interval || 100);
+    }, parseInt(interval) || 100);
 
     setInterval(() => {
       logUpdate(
@@ -32,7 +37,7 @@ function main(interval) {
   });
 
   ws.on('message', (data) => {
-    handleMessage(data, Date.now());
+    handleMessage(data.toString(), Date.now());
   });
 
   ws.on('error', (err) => {
@@ -55,6 +60,11 @@ function main(interval) {
   });
 }
 
+/**
+ * Handle message event.
+ * @param {string} data - data
+ * @param {number} receivedTime - received timestamp
+ */
 function handleMessage(data, receivedTime) {
   const items = data.split(' - ');
 
