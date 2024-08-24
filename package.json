@@ -1,6 +1,6 @@
 {
   "name": "network-quality-monitor",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Tools for long-term monitoring of network quality.",
   "main": "ping-monitor-cli.js",
   "scripts": {
@@ -54,7 +54,7 @@
     "@types/sinon": "^17.0.3",
     "@types/ws": "^8.5.12",
     "chai": "^4.5.0",
-    "mocha": "^8.4.0",
+    "mocha": "^10.7.3",
     "sinon": "^9.2.4",
     "typescript": "^5.5.4"
   }

@@ -99,9 +99,14 @@ Set env variable `DEBUG=ping-monitor-server`
 
 ## TODO
 
-- [ ] Support config file
+- [x] Support config file
 
 ## History
+
+**0.3.4**
+
+- Add http request file
+- Improve types
 
 **0.3.3**
 
