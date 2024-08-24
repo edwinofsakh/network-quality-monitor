@@ -99,13 +99,13 @@ Set env variable `DEBUG=ping-monitor-server`
 
 ## TODO
 
-- [x] Support config file
+- [ ] Migrate to TypeScript
 
 ## History
 
 **0.3.4**
 
-- Add http request file
+- Add http request config file
 - Improve types
 
 **0.3.3**
