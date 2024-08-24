@@ -32,19 +32,19 @@
   "homepage": "https://github.com/edwinofsakh/network-quality-monitor#readme",
   "dependencies": {
     "asciichart": "^1.5.25",
-    "bufferutil": "^4.0.3",
+    "bufferutil": "^4.0.8",
     "csv-write-stream": "^2.0.0",
-    "debug": "^4.3.1",
-    "express": "^4.17.1",
+    "debug": "^4.3.6",
+    "express": "^4.19.2",
     "log-update": "^4.0.0",
-    "meow": "^8.1.0",
-    "net-ping": "^1.2.3",
-    "utf-8-validate": "^5.0.4",
-    "ws": "^7.4.2"
+    "meow": "^8.1.2",
+    "net-ping": "^1.2.4",
+    "utf-8-validate": "^5.0.10",
+    "ws": "^7.5.10"
   },
   "devDependencies": {
-    "chai": "^4.2.0",
-    "mocha": "^8.2.1",
+    "chai": "^4.5.0",
+    "mocha": "^8.4.0",
     "sinon": "^9.2.4"
   }
 }
