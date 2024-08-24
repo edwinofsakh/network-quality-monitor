@@ -117,3 +117,5 @@ dist
 
 results/
 history*
+
+.vscode
